@@ -7,7 +7,8 @@ from app.api.v1.serializers import ticket_out
 from app.core.errors import AppError, not_found
 from app.core.ratelimit import user_limit
 from app.db import now
-from app.schemas.api import FileUrlOut, JobOut, PagesOut, TicketOut, TicketPatch, TicketWithTrip
+from app.repositories.base import to_api
+from app.schemas.api import DocumentRow, FileUrlOut, JobOut, PagesOut, TicketOut, TicketPatch, TicketWithTrip
 from app.services.trip_intel import update_trip_from_tickets
 
 router = APIRouter(prefix="/v1", tags=["tickets"], dependencies=[IpGuard])
@@ -36,14 +37,47 @@ async def list_trip_tickets(trip_id: str, user: AuthedUser = UserDep, ctx: Ctx =
     return [ticket_out(t) for t in await cursor.to_list(length=None)]
 
 
-@router.get("/tickets/recent", response_model=list[TicketWithTrip])
-async def recent_tickets(limit: int = Query(6, ge=1, le=50), user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
-    rows = await ctx.tickets.col.find({"user_id": user.id}, _NO_RAW).sort([("created_at", -1)]).limit(limit).to_list(length=None)
-    trips = {t["_id"]: t for t in await ctx.trips.list(user.id)}
+async def _tickets_with_trip(ctx: Ctx, user_id: str, limit: int) -> list[dict]:
+    rows = await ctx.tickets.col.find({"user_id": user_id}, _NO_RAW).sort([("created_at", -1)]).limit(limit).to_list(length=None)
+    trips = {t["_id"]: t for t in await ctx.trips.list(user_id)}
     out = []
     for r in rows:
         trip = trips.get(r["trip_id"])
         out.append({**ticket_out(r), "trip": {"id": trip["_id"], "name": trip["name"], "destination": trip.get("destination")} if trip else None})
+    return out
+
+
+@router.get("/tickets/recent", response_model=list[TicketWithTrip])
+async def recent_tickets(limit: int = Query(6, ge=1, le=50), user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
+    return await _tickets_with_trip(ctx, user.id, limit)
+
+
+@router.get("/tickets", response_model=list[TicketWithTrip])
+async def all_tickets(limit: int = Query(300, ge=1, le=500), user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
+    """Every ticket across all of the user's trips, newest first (the Profile → Tickets screen)."""
+    return await _tickets_with_trip(ctx, user.id, limit)
+
+
+@router.get("/documents", response_model=list[DocumentRow])
+async def all_documents(limit: int = Query(300, ge=1, le=500), user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
+    """Every uploaded file, newest first, with the trip and ticket it became (the Profile → Documents screen)."""
+    docs = await ctx.documents.col.find({"user_id": user.id}).sort([("created_at", -1)]).limit(limit).to_list(length=None)
+    trips = {t["_id"]: t for t in await ctx.trips.list(user.id)}
+    by_doc: dict[str, dict] = {}
+    async for t in ctx.tickets.col.find({"user_id": user.id, "document_id": {"$ne": None}}, {"raw_text": 0, "structured_data": 0}).sort([("created_at", 1)]):
+        by_doc.setdefault(t["document_id"], t)
+    out = []
+    for d in docs:
+        trip, ticket = trips.get(d.get("trip_id")), by_doc.get(d["_id"])
+        out.append(
+            {
+                **{k: v for k, v in (to_api(d) or {}).items() if k in ("id", "file_name", "mime_type", "size", "status", "created_at")},
+                "trip": {"id": trip["_id"], "name": trip["name"], "destination": trip.get("destination")} if trip else None,
+                "ticket_id": ticket["_id"] if ticket else None,
+                "ticket_title": (ticket.get("title") or ticket.get("file_name")) if ticket else None,
+                "document_type": ticket.get("document_type") if ticket else None,
+            }
+        )
     return out
 
 

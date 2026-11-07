@@ -8,6 +8,7 @@ type S = components['schemas'];
 
 export type Ticket = S['TicketOut'];
 export type TicketWithTrip = S['TicketWithTrip'];
+export type DocumentRow = S['DocumentRow'];
 export type TicketPatch = S['TicketPatch'];
 export type Trip = S['TripOut'];
 export type TripWithStats = S['TripWithStats'];

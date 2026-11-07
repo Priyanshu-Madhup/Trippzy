@@ -1,5 +1,5 @@
 ﻿import { useRouter } from 'expo-router';
-import { ArrowRight, FileText, Image as ImageIcon, Map, Plus, Sparkles, X } from 'lucide-react-native';
+import { ArrowRight, FileText, Image as ImageIcon, Map, Luggage, Plus, X } from 'lucide-react-native';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -101,7 +101,7 @@ export default function ShareToTrip() {
         <Animated.View entering={FadeInUp.duration(280)} style={lift} className="overflow-hidden rounded-card border border-line bg-surface p-5">
           <View className="flex-row items-start justify-between gap-3">
             <View className="size-11 items-center justify-center rounded-2xl bg-primary">
-              <Icon as={Sparkles} size={20} className="text-primary-ink" />
+              <Icon as={Luggage} size={20} className="text-primary-ink" />
             </View>
             <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Cancel" className="size-10 items-center justify-center rounded-full bg-surface-2 active:opacity-70">
               <Icon as={X} size={18} className="text-muted" />

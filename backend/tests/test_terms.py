@@ -51,3 +51,19 @@ async def test_acceptance_is_per_user_and_needs_sign_in(client, auth):
     await client.post("/v1/me/terms", json={"version": TERMS_VERSION}, headers=auth("user_A"))
     assert (await client.get("/v1/me", headers=auth("user_B"))).json()["terms_accepted_version"] is None
     assert (await client.post("/v1/me/terms", json={"version": TERMS_VERSION})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_profile_lists_tickets_and_documents(client, auth, ctx):
+    h = auth()
+    trip_id = (await client.post("/v1/trips", json={"name": "Goa"}, headers=h)).json()["id"]
+    up = await client.post(f"/v1/trips/{trip_id}/uploads", json={"file_name": "boarding.pdf", "mime_type": "application/pdf", "size": 1234}, headers=h)
+    assert up.status_code == 201, up.text
+    tickets = (await client.get("/v1/tickets", headers=h)).json()
+    assert len(tickets) == 1 and tickets[0]["trip"]["name"] == "Goa"
+    docs = (await client.get("/v1/documents", headers=h)).json()
+    assert len(docs) == 1 and docs[0]["file_name"] == "boarding.pdf" and docs[0]["size"] == 1234
+    assert docs[0]["trip"]["name"] == "Goa" and docs[0]["ticket_id"] == tickets[0]["id"]
+    # nobody else sees them
+    assert (await client.get("/v1/documents", headers=auth("user_B"))).json() == []
+    assert (await client.get("/v1/tickets", headers=auth("user_B"))).json() == []

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
 import { ConfirmSheet } from '@/components/common/ConfirmSheet';
 import { EmptyState } from '@/components/common/EmptyState';
-import { pullRefresh } from '@/components/common/PullRefresh';
+import { usePullRefresh } from '@/components/common/PullRefresh';
 import { FilterTabs, SORT_OPTIONS, SearchBar, SortButton, type SortKey } from '@/components/common/SearchFilter';
 import { CollapsibleTicket } from '@/components/tickets/CollapsibleTicket';
 import { FailedTicketCard, StaleTicketCard } from '@/components/tickets/CompactTicket';
@@ -46,7 +46,8 @@ export default function TripDetail() {
   const notify = profile?.preferences?.notifications !== false;
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useTrip(tripId);
-  const { data: tickets, isLoading: ticketsLoading, refetch, isRefetching } = useTickets(tripId);
+  const { data: tickets, isLoading: ticketsLoading, refetch } = useTickets(tripId);
+  const pull = usePullRefresh(refetch);
   const deleteTicket = useDeleteTicket();
   const deleteTrip = useDeleteTrip();
   const retry = useRetryTicket();
@@ -187,14 +188,14 @@ export default function TripDetail() {
 
   return (
     <View className="flex-1">
-      <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + 110 }} refreshControl={pullRefresh(refetch, isRefetching)}>
+      <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + 110 }} refreshControl={pull}>
         {trip ? <TripHero trip={trip} bookings={bookings} onMenu={() => setTripMenu(true)} /> : <TripHeroSkeleton />}
 
         <View className="gap-6 px-4 pt-8" onLayout={(e) => (offsets.current.content = e.nativeEvent.layout.y)}>
           {queue.length || inProgress.length ? (
             <View className="gap-3">
               {queue.map((i) => (
-                <ProcessingCard key={i.key} stage={i.stage as Stage} fileName={i.fileName} fileSize={i.fileSize} uploadProgress={i.progress} error={i.error} onDismiss={() => dismiss(i.key)} />
+                <ProcessingCard key={i.key} stage={i.stage as Stage} fileName={i.fileName} fileSize={i.fileSize} uploadProgress={i.progress} ahead={items.slice(0, items.indexOf(i)).filter((x) => x.stage === 'queued' || x.stage === 'uploading').length} error={i.error} onDismiss={() => dismiss(i.key)} />
               ))}
               {inProgress.map((t) => (
                 <ProcessingCard key={t.id} stage={(!t.processing_stage || t.processing_stage === 'uploading' ? 'queued' : t.processing_stage) as Stage} fileName={t.file_name ?? 'Document'} fileSize={t.file_size} />

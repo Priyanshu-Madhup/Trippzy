@@ -1,4 +1,4 @@
-import { ChevronRight, CircleAlert, RotateCw, Sparkles, Trash2 } from 'lucide-react-native';
+import { ChevronRight, CircleAlert, Hourglass, RotateCw, Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { ProviderLogo } from '@/components/common/ProviderLogo';
@@ -125,7 +125,7 @@ export function StaleTicketCard({ ticket, handlers }: { ticket: Ticket; handlers
     <View style={card} accessibilityRole="alert" className="rounded-card border border-line bg-surface p-5">
       <View className="flex-row items-center gap-3">
         <View className="size-11 items-center justify-center rounded-xl bg-surface-2">
-          <Icon as={Sparkles} size={20} className="text-muted" />
+          <Icon as={Hourglass} size={20} className="text-muted" />
         </View>
         <View className="min-w-0 flex-1">
           <Text className="font-geist-semibold text-[15px]">This is taking longer than expected</Text>

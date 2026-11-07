@@ -1,5 +1,5 @@
-import type { FlightData, Ticket } from '@/types';
-import { chronoKey, flightJourney, isStale, matchesFilter, ticketSearchText, ticketView, typeSummary } from '@/utils/ticket';
+import type { DocumentType, FlightData, Ticket } from '@/types';
+import { chronoKey, flightJourney, groupByCategory, isStale, matchesFilter, ticketSearchText, ticketView, typeSummary } from '@/utils/ticket';
 
 const seg = (from: string, to: string, d1: string, t1: string, d2: string, t2: string, fn = 'X1') => ({
   flight_number: fn,
@@ -76,5 +76,15 @@ describe('ticket helpers', () => {
     expect(isStale(ticket({ processing_status: 'processing', updated_at: '2026-10-01T10:00:00Z' }), now)).toBe(true);
     expect(isStale(ticket({ processing_status: 'processing', updated_at: '2026-10-01T10:08:00Z' }), now)).toBe(false);
     expect(isStale(ticket({ processing_status: 'completed', updated_at: '2026-10-01T10:00:00Z' }), now)).toBe(false);
+  });
+});
+
+describe('groupByCategory', () => {
+  it('groups in the app order and drops empty categories', () => {
+    const items = [{ t: 'hotel' }, { t: 'flight' }, { t: 'restaurant' }, { t: 'flight' }, { t: 'unknown' }] as { t: DocumentType }[];
+    const g = groupByCategory(items, (i) => i.t);
+    expect(g.map((x) => x.key)).toEqual(['flight', 'hotel', 'activity', 'document']);
+    expect(g[0].items).toHaveLength(2);
+    expect(g.find((x) => x.key === 'train')).toBeUndefined();
   });
 });

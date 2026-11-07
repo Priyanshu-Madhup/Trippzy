@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { qk } from '@/lib/queryClient';
-import { deleteTicket, getRecentTickets, getTickets, reprocessTicket, updateTicket } from '@/services/tickets';
+import { deleteTicket, getAllTickets, getDocuments, getRecentTickets, getTickets, reprocessTicket, updateTicket } from '@/services/tickets';
 import { getStats } from '@/services/account';
 import type { Ticket, TicketPatch } from '@/types';
 import { isStale } from '@/utils/ticket';
@@ -18,6 +18,8 @@ export function useTickets(tripId: string | undefined) {
 }
 
 export const useRecentTickets = (limit = 6) => useQuery({ queryKey: qk.recentTickets, queryFn: () => getRecentTickets(limit) });
+export const useAllTickets = () => useQuery({ queryKey: qk.allTickets, queryFn: getAllTickets });
+export const useDocuments = () => useQuery({ queryKey: qk.documents, queryFn: getDocuments });
 export const useStats = () => useQuery({ queryKey: qk.stats, queryFn: getStats });
 
 export function useInvalidateTripData() {
@@ -27,6 +29,8 @@ export function useInvalidateTripData() {
     void qc.invalidateQueries({ queryKey: qk.trip(tripId) });
     void qc.invalidateQueries({ queryKey: qk.trips });
     void qc.invalidateQueries({ queryKey: qk.recentTickets });
+    void qc.invalidateQueries({ queryKey: qk.allTickets });
+    void qc.invalidateQueries({ queryKey: qk.documents });
     void qc.invalidateQueries({ queryKey: qk.stats });
   };
 }

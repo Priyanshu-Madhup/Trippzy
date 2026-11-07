@@ -70,7 +70,7 @@ export function PhotoSheet({
             </Pressable>
           ) : null}
         </View>
-        <Text className="mt-4 text-[11px] text-faint">Avatars by DiceBear (Lorelei, Notionists, Thumbs), public domain.</Text>
+        <Text className="mt-4 text-[11px] text-faint">Avatars from DiceBear: Lorelei, Notionists, Open Peeps and Thumbs (public domain).</Text>
       </View>
     </Sheet>
   );

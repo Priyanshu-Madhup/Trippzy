@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/common/EmptyState';
-import { pullRefresh } from '@/components/common/PullRefresh';
+import { usePullRefresh } from '@/components/common/PullRefresh';
 import { SearchBar } from '@/components/common/SearchFilter';
 import { TripCard, TripCardSkeleton } from '@/components/trips/TripCard';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,8 @@ type Scope = 'all' | 'upcoming' | 'past';
 
 export default function Trips() {
   const insets = useSafeAreaInsets();
-  const { data: trips, isLoading, error, refetch, isRefetching } = useTrips();
+  const { data: trips, isLoading, error, refetch } = useTrips();
+  const pull = usePullRefresh(refetch);
   const { openCreateTrip } = useUI();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>('all');
@@ -39,7 +40,7 @@ export default function Trips() {
     <ScrollView
       contentContainerStyle={{ paddingTop: insets.top + 32, paddingBottom: 56, paddingHorizontal: 16 }}
       keyboardShouldPersistTaps="handled"
-      refreshControl={pullRefresh(refetch, isRefetching)}
+      refreshControl={pull}
     >
       <View className="flex-row items-end justify-between gap-4 pb-6">
         <View className="flex-1">

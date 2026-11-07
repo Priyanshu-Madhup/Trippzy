@@ -1,4 +1,4 @@
-import { AlertTriangle, Car, MapPin, RefreshCw, Sparkles, TrafficCone } from 'lucide-react-native';
+import { AlertTriangle, Car, Compass, MapPin, RefreshCw, TrafficCone } from 'lucide-react-native';
 import { Linking, Pressable, View } from 'react-native';
 import { Icon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -16,7 +16,7 @@ function Header({ onRefresh, spinning }: { onRefresh?: () => void; spinning?: bo
     <View className="mb-3 flex-row items-center justify-between gap-3">
       <View className="flex-row items-center gap-2.5">
         <View className="size-8 items-center justify-center rounded-xl bg-sun/15">
-          <Icon as={Sparkles} size={16} className="text-sun" />
+          <Icon as={Compass} size={16} className="text-sun" />
         </View>
         <Text className="font-geist-semibold text-[15px]">Trippzy note</Text>
       </View>
@@ -129,7 +129,7 @@ function NoteBody({ note }: { note: TripNote }) {
         </View>
       ) : null}
 
-      <Text className="mt-3 text-[10px] text-faint">{note.route_checked ? `${t?.basis === 'live' ? 'Live' : 'Typical'} traffic by TomTom · ` : ''}Your location isn’t stored on our servers.</Text>
+      <Text className="mt-3 text-[10px] text-faint">{note.route_checked ? `${t?.basis === 'live' ? 'Live' : 'Typical'} traffic · ` : ''}Your location isn’t stored on our servers.</Text>
     </View>
   );
 }

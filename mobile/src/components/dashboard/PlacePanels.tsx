@@ -81,7 +81,6 @@ export function WeatherCard({ place, info, loading }: { place: string; info: Pla
           ))}
         </View>
       ) : null}
-      <Text className="mt-3 text-[10px] text-faint">Weather via Open-Meteo</Text>
     </View>
   );
 }

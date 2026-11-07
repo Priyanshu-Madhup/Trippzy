@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logo } from '@/components/brand/Logo';
 import { DestinationImage } from '@/components/common/DestinationImage';
 import { EmptyState } from '@/components/common/EmptyState';
-import { pullRefresh } from '@/components/common/PullRefresh';
+import { usePullRefresh } from '@/components/common/PullRefresh';
 import { NextTripHero, TripEssentials } from '@/components/dashboard/NextTrip';
 import { TrippzyNote } from '@/components/dashboard/TrippzyNote';
 import { AboutPlace, PlaceNews, WeatherCard } from '@/components/dashboard/PlacePanels';
@@ -30,14 +30,15 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const name = useDisplayName();
   const { openCreateTrip } = useUI();
-  const { data: trips, isLoading, error, refetch, isRefetching } = useTrips();
+  const { data: trips, isLoading, error, refetch } = useTrips();
+  const pull = usePullRefresh(refetch);
   useOfflineSync(trips);
   const upcoming = useMemo(() => upcomingTrips(trips ?? []), [trips]);
   const next = upcoming[0];
   const firstName = name.split(' ')[0];
 
   return (
-    <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 56, paddingHorizontal: 16 }} refreshControl={pullRefresh(refetch, isRefetching)}>
+    <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 56, paddingHorizontal: 16 }} refreshControl={pull}>
       <View className="py-4">
         <Logo />
       </View>

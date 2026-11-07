@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowRight, BedDouble, Plane, Sparkles } from 'lucide-react-native';
+import { ArrowRight, BedDouble, Luggage, Plane } from 'lucide-react-native';
 import { Pressable, ScrollView, View, type PressableProps } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ export default function Welcome() {
 
           <Animated.View entering={FadeInDown.duration(600)} className="mt-12">
             <View className="flex-row items-center gap-2 self-start rounded-full bg-white/10 px-3 py-1.5">
-              <Icon as={Sparkles} size={14} className="text-[#F3C88F]" />
+              <Icon as={Luggage} size={14} className="text-[#F3C88F]" />
               <Text className="font-geist-medium text-[13px] text-white">AI-organised travel documents</Text>
             </View>
             <Text className="mt-6 font-geist-semibold text-[44px] leading-[43px] text-white" style={{ letterSpacing: -1.98 }}>

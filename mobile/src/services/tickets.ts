@@ -1,5 +1,8 @@
-import type { JobOut, Ticket, TicketPatch, TicketWithTrip, UploadOut } from '@/types';
+import type { DocumentRow, JobOut, Ticket, TicketPatch, TicketWithTrip, UploadOut } from '@/types';
 import { apiFetch } from './api';
+
+export const getAllTickets = () => apiFetch<TicketWithTrip[]>('/v1/tickets?limit=500');
+export const getDocuments = () => apiFetch<DocumentRow[]>('/v1/documents?limit=500');
 
 export const getTickets = (tripId: string) => apiFetch<Ticket[]>(`/v1/trips/${tripId}/tickets`);
 export const getRecentTickets = (limit = 6) => apiFetch<TicketWithTrip[]>(`/v1/tickets/recent?limit=${limit}`);

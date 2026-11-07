@@ -31,6 +31,8 @@ export const qk = {
   trip: (id: string) => ['trips', id] as const,
   tickets: (tripId: string) => ['tickets', 'trip', tripId] as const,
   recentTickets: ['tickets', 'recent'] as const,
+  allTickets: ['tickets', 'all'] as const,
+  documents: ['documents'] as const,
   profile: ['profile'] as const,
   stats: ['stats'] as const,
   placeInfo: (place: string) => ['place-info', place.toLowerCase()] as const,

@@ -1,4 +1,4 @@
-import { Download, Sparkles } from 'lucide-react-native';
+import { Download, ListChecks } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Button } from '@/components/ui/Button';
@@ -53,7 +53,7 @@ export function UpdateGate() {
       <View className="gap-5 px-6 pb-6 pt-4">
         <View className="gap-2.5 rounded-2xl bg-surface-2 p-4">
           <View className="flex-row items-center gap-2">
-            <Icon as={Sparkles} size={15} className="text-ink-2" />
+            <Icon as={ListChecks} size={15} className="text-ink-2" />
             <Text className="font-geist-semibold text-[13px]">What’s changed</Text>
           </View>
           {lines.length ? (

@@ -1,4 +1,4 @@
-import { Check, CircleAlert, FileText, Sparkles, X } from 'lucide-react-native';
+import { Check, CircleAlert, FileText, ScanText, X } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -34,6 +34,7 @@ export function ProcessingCard({
   fileName,
   fileSize,
   uploadProgress = 0,
+  ahead = 0,
   error,
   onDismiss,
 }: {
@@ -41,6 +42,8 @@ export function ProcessingCard({
   fileName: string;
   fileSize?: number | null;
   uploadProgress?: number;
+  /** For queued uploads: how many files are in front of this one. */
+  ahead?: number;
   error?: string | null;
   onDismiss?: () => void;
 }) {
@@ -72,13 +75,13 @@ export function ProcessingCard({
             <Icon as={Check} size={20} className="text-success" />
           ) : (
             <Animated.View style={pulseStyle}>
-              <Icon as={Sparkles} size={20} className="text-ink" />
+              <Icon as={ScanText} size={20} className="text-ink" />
             </Animated.View>
           )}
         </View>
         <View className="min-w-0 flex-1">
           <Text numberOfLines={1} className={cn('font-geist-semibold text-[15px]', failed && 'text-danger')}>
-            {failed ? (error ?? COPY.failed) : COPY[stage]}
+            {failed ? (error ?? COPY.failed) : stage === 'queued' && ahead > 0 ? `In line · ${ahead} ahead` : stage === 'queued' && ahead === 0 && uploadProgress === 0 ? COPY.queued : COPY[stage]}
           </Text>
           <View className="mt-0.5 flex-row items-center gap-1.5">
             <Icon as={FileText} size={14} className="text-muted" />

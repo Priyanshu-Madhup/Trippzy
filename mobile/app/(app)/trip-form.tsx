@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Sparkles, X } from 'lucide-react-native';
+import { MapPin, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -89,7 +89,7 @@ export default function TripForm() {
             label="Destination"
             hint={
               <View className="flex-row items-center gap-1.5">
-                <Icon as={Sparkles} size={14} className="text-sun" />
+                <Icon as={MapPin} size={14} className="text-sun" />
                 <Text className="text-[13px] text-muted">Optional — we’ll detect it from your tickets.</Text>
               </View>
             }

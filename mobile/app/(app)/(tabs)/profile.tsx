@@ -1,6 +1,6 @@
 import { useUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
-import { Cake, FileText, Globe, Map, Pencil, Ticket, User } from 'lucide-react-native';
+import { Cake, ChevronRight, FileText, Globe, Map, Pencil, Ticket, User } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,9 +27,9 @@ export default function Profile() {
   const soft = useShadow('soft');
 
   const cards = [
-    { label: 'Trips', value: stats?.trips, icon: Map },
-    { label: 'Tickets', value: stats?.tickets, icon: Ticket },
-    { label: 'Documents', value: stats?.documents, icon: FileText },
+    { label: 'Trips', value: stats?.trips, icon: Map, go: () => router.navigate('/trips') },
+    { label: 'Tickets', value: stats?.tickets, icon: Ticket, go: () => router.push('/all-tickets') },
+    { label: 'Documents', value: stats?.documents, icon: FileText, go: () => router.push('/documents') },
   ];
 
   const details = [
@@ -89,11 +89,16 @@ export default function Profile() {
       </Animated.View>
 
       <View className="mt-4 flex-row gap-3">
-        {cards.map(({ label, value, icon }, i) => (
-          <Animated.View key={label} entering={FadeInUp.delay(50 * (i + 1)).duration(300)} style={soft} className="flex-1 rounded-3xl border border-line bg-surface p-4">
-            <Icon as={icon} size={20} className="text-muted" />
-            {isLoading ? <Skeleton className="mt-4 h-8 w-12" /> : <Text className="mt-4 font-geist-semibold text-[32px] leading-[32px]" style={{ letterSpacing: -1.28 }}>{value ?? 0}</Text>}
-            <Text className="mt-1.5 text-sm text-muted">{label}</Text>
+        {cards.map(({ label, value, icon, go }, i) => (
+          <Animated.View key={label} entering={FadeInUp.delay(50 * (i + 1)).duration(300)} className="flex-1">
+            <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={`${label}: ${value ?? 0}. Open`} style={soft} className="rounded-3xl border border-line bg-surface p-4 active:scale-[0.97] active:bg-surface-2">
+              <View className="flex-row items-center justify-between">
+                <Icon as={icon} size={20} className="text-muted" />
+                <Icon as={ChevronRight} size={16} className="text-faint" />
+              </View>
+              {isLoading ? <Skeleton className="mt-4 h-8 w-12" /> : <Text className="mt-4 font-geist-semibold text-[32px] leading-[32px]" style={{ letterSpacing: -1.28 }}>{value ?? 0}</Text>}
+              <Text className="mt-1.5 text-sm text-muted">{label}</Text>
+            </Pressable>
           </Animated.View>
         ))}
       </View>

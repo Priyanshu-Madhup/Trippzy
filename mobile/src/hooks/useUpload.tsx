@@ -30,7 +30,9 @@ interface UploadContextValue {
 }
 
 const UploadContext = createContext<UploadContextValue | null>(null);
-const CONCURRENCY = 2;
+// One file at a time, in the order they were picked: a bulk upload is a proper queue, and the phone's connection isn't split
+// across several big files (each one finishes, then the server starts reading it while the next one uploads).
+const CONCURRENCY = 1;
 
 function friendly(err: unknown): string {
   if (err instanceof ApiError) {

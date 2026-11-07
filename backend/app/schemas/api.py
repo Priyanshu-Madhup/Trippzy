@@ -222,6 +222,21 @@ class TicketWithTrip(TicketOut):
     trip: TripRef | None = None
 
 
+class DocumentRow(_Out):
+    """An uploaded file, with the trip and ticket it became."""
+
+    id: str
+    file_name: str | None = None
+    mime_type: str | None = None
+    size: int = 0
+    status: str | None = None
+    created_at: datetime
+    trip: TripRef | None = None
+    ticket_id: str | None = None
+    ticket_title: str | None = None
+    document_type: str | None = None
+
+
 Text = Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)]
 
 

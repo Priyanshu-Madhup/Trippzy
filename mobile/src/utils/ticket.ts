@@ -41,6 +41,13 @@ export function matchesFilter(type: DocumentType, filter: FilterKey): boolean {
   return type === filter;
 }
 
+/** Splits items into the app's categories (Flights, Hotels, Trains…), in a fixed order, dropping empty ones. */
+export function groupByCategory<T>(items: T[], typeOf: (item: T) => DocumentType): { key: FilterKey; label: string; items: T[] }[] {
+  return FILTERS.filter((f) => f.key !== 'all')
+    .map((f) => ({ key: f.key, label: f.label, items: items.filter((i) => matchesFilter(typeOf(i), f.key)) }))
+    .filter((g) => g.items.length > 0);
+}
+
 /** Short summary chips for trip cards, e.g. "Flight • Hotel • Train". */
 export function typeSummary(types: DocumentType[]): string[] {
   const order: DocumentType[] = ['flight', 'hotel', 'train', 'bus', 'activity', 'restaurant', 'generic_travel_document'];

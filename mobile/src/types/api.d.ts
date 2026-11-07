@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/v1/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All Documents
+         * @description Every uploaded file, newest first, with the trip and ticket it became (the Profile → Documents screen).
+         */
+        get: operations["all_documents_v1_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -91,6 +111,26 @@ export interface paths {
         };
         /** Place Info */
         get: operations["place_info_v1_place_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All Tickets
+         * @description Every ticket across all of the user's trips, newest first (the Profile → Tickets screen).
+         */
+        get: operations["all_tickets_v1_tickets_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -404,6 +444,37 @@ export interface components {
              * @default []
              */
             ungrounded_fields: string[];
+        };
+        /**
+         * DocumentRow
+         * @description An uploaded file, with the trip and ticket it became.
+         */
+        DocumentRow: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Document Type */
+            document_type?: string | null;
+            /** File Name */
+            file_name?: string | null;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Size
+             * @default 0
+             */
+            size: number;
+            /** Status */
+            status?: string | null;
+            /** Ticket Id */
+            ticket_id?: string | null;
+            /** Ticket Title */
+            ticket_title?: string | null;
+            trip?: components["schemas"]["TripRef"] | null;
         };
         /** FileUrlOut */
         FileUrlOut: {
@@ -1291,6 +1362,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    all_documents_v1_documents_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_job_v1_jobs__job_id__get: {
         parameters: {
             query?: never;
@@ -1464,6 +1566,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    all_tickets_v1_tickets_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketWithTrip"][];
                 };
             };
             /** @description Validation Error */

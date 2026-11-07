@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Sparkles } from 'lucide-react-native';
+import { Camera } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -80,7 +80,7 @@ export function ImageLoading({ label }: { label?: string | null }) {
       {label ? (
         <View className="absolute inset-x-0 top-[38%] items-center px-6">
           <View className="max-w-full flex-row items-center gap-2 rounded-full bg-black/35 px-4 py-2">
-            <Icon as={Sparkles} size={14} className="text-white" />
+            <Icon as={Camera} size={14} className="text-white" />
             <Text numberOfLines={1} className="shrink font-geist-medium text-[13px] text-white">
               Finding the perfect photo of {label}…
             </Text>
