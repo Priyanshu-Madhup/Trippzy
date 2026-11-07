@@ -1,0 +1,26 @@
+name: backend
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'openapi.json', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', 'openapi.json', '.github/workflows/backend.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+      # The committed openapi.json must match the code, or the app's generated types are stale.
+      - name: OpenAPI schema is up to date
+        run: |
+          uv run python scripts/export_openapi.py
+          git diff --exit-code ../openapi.json

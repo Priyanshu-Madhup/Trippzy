@@ -1,0 +1,30 @@
+name: mobile
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', 'openapi.json', '.github/workflows/mobile.yml']
+  pull_request:
+    paths: ['mobile/**', 'openapi.json', '.github/workflows/mobile.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: API types are up to date with openapi.json
+        run: |
+          npm run api:types
+          git diff --exit-code src/types/api.d.ts
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      # Proves Metro + Babel + NativeWind can build the production bundle.
+      - run: npm run bundle:check

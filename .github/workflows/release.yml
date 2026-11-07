@@ -1,0 +1,51 @@
+name: release-apk
+# Publish a GitHub Release (tag like v1.1.0, with the "what's new" text in its description).
+# This builds the Android APK and attaches it; the app then offers the update to everyone on an older version.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Public values baked into the app: the Railway API URL and the Clerk publishable key.
+      EXPO_PUBLIC_API_URL: ${{ vars.API_URL }}
+      EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - name: Use the release tag as the app version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e "const f='app.json',j=JSON.parse(require('fs').readFileSync(f));j.expo.version=process.argv[1];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')" "$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Check the build settings
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::Add the EXPO_TOKEN secret"; exit 1; }
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Add the API_URL repository variable (your Railway https URL)"; exit 1; }
+          test -n "$EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY" || { echo "::error::Add the CLERK_PUBLISHABLE_KEY repository variable"; exit 1; }
+      - name: Build the APK
+        run: npx eas-cli build --platform android --profile release --local --non-interactive --output "$RUNNER_TEMP/trippzy-${VERSION}.apk"
+      - name: Attach it to the release
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/trippzy-${VERSION}.apk" --clobber

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trippzy — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f5; --ink:#111110; --muted:#77746c; --line:rgba(17,17,16,.12); }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0b0b0c; --ink:#f4f4f1; --muted:#9a9891; --line:rgba(255,255,255,.14); } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:48px 20px 96px; }
+  h1 { font-size:34px; letter-spacing:-.03em; margin:0 0 6px; }
+  h2 { font-size:20px; margin:40px 0 8px; letter-spacing:-.01em; }
+  p, li { color:var(--ink); } .muted { color:var(--muted); }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:15px; }
+  th, td { text-align:left; padding:10px 12px 10px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:500; }
+  a { color:inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy Policy</h1>
+  <p class="muted">Trippzy · Last updated: [DATE]</p>
+
+  <p>Trippzy ("we", "the app") helps you organise travel bookings. You upload tickets and confirmations; we read them and
+  build your trip. This policy explains what we collect, why, who processes it, and how you can delete it.
+  The app is operated by <strong>[YOUR NAME OR COMPANY]</strong>. Contact: <strong>[YOUR CONTACT EMAIL]</strong>.</p>
+
+  <h2>What we collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th></tr>
+    <tr><td><strong>Account details</strong>: email address, name, profile picture (if you sign in with Google or Apple), and sign-in credentials handled by our authentication provider</td><td>To create and secure your account</td></tr>
+    <tr><td><strong>Documents you upload</strong>: PDFs and photos of tickets, hotel and restaurant bookings, visas and similar travel documents. These can contain personal details such as passenger names, booking references and passport or visa information</td><td>To read them and build your trip, and to let you open them again</td></tr>
+    <tr><td><strong>Information extracted from your documents</strong>: routes, dates, times, providers, booking references, seats, prices, and the text we read from the document</td><td>To show your tickets, itinerary and trip details</td></tr>
+    <tr><td><strong>Trip details you enter</strong>: trip names, destinations, dates, notes, and your edits</td><td>To provide the app</td></tr>
+    <tr><td><strong>Settings</strong>: theme and notification preferences</td><td>To remember your choices</td></tr>
+    <tr><td><strong>Basic technical data</strong>: request logs (time, endpoint, error codes) and crash reports, which never include your documents or sign-in tokens</td><td>Security, abuse prevention and fixing bugs</td></tr>
+  </table>
+  <p>We do <strong>not</strong> collect your contacts, microphone recordings, or advertising identifiers. The app asks
+  for camera access only if you choose to photograph a ticket. It does not read your photo library; you pick files with the system picker.</p>
+
+  <h2>Your location (optional)</h2>
+  <p>If you allow it, the app reads your approximate location <strong>only while it is open</strong> to show a travel note on the
+  Home screen: how far you are from your airport or station and when to leave. Your coordinates are sent to our server for that one
+  request, used to calculate the route (via TomTom) and discarded. We do not store them, log them, or keep a location history, and the
+  app never reads your location in the background. You can decline or turn it off in your phone's settings; the rest of the app works without it.</p>
+  <p>On the Edit-profile screen you can optionally add your gender, age and country, and a profile picture. These are used only to
+  personalise your profile, are stored with your account (the picture is stored by our sign-in provider, Clerk), and can be cleared
+  at any time. Profile avatars offered in the app are public-domain illustrations by DiceBear.</p>
+  <p>If you turn on calendar reminders, the app adds events for your tickets to a "Trippzy" calendar on your phone. This is stored only on your phone's calendar.</p>
+
+  <h2>How your documents are processed</h2>
+  <p>When you upload a document, it is stored privately and a text version is sent to an AI model to extract the booking
+  details. We use OpenRouter to reach the model and ask providers not to retain or train on your data. We do not use your
+  documents to train models. The extraction runs on our servers; your phone never holds our AI keys.</p>
+
+  <h2>Who processes your data</h2>
+  <table>
+    <tr><th>Service</th><th>Purpose</th></tr>
+    <tr><td>Clerk</td><td>Sign-in and account management</td></tr>
+    <tr><td>MongoDB Atlas</td><td>Database for your trips, tickets and extracted details</td></tr>
+    <tr><td>Cloudflare R2</td><td>Private storage of your uploaded files</td></tr>
+    <tr><td>OpenRouter and the model provider it routes to</td><td>Reading your documents with AI</td></tr>
+    <tr><td>Open-Meteo, Wikipedia, Google News, Wikimedia Commons, logo and favicon services</td><td>Weather, destination photos, news and brand logos. These receive public lookups such as a destination or airline name, never your account details or documents</td></tr>
+    <tr><td>TomTom</td><td>Routing and traffic for the travel note. Receives your coordinates and your airport or station's position for that single request, not your name or account details</td></tr>
+    <tr><td>Railway</td><td>Hosting of our servers</td></tr>
+  </table>
+  <p>These providers act on our behalf. We do not sell your personal data and we do not share it for advertising.</p>
+
+  <h2>Security</h2>
+  <p>Data is encrypted in transit (HTTPS). Files are stored privately; the app receives short-lived links that expire in
+  minutes. Every request is checked against your account, so other users cannot access your data. If you use the offline
+  feature, copies of tickets for upcoming trips are kept in the app's private storage on your phone and removed when you sign out.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Until you delete it. You can delete a ticket or a trip at any time, which removes the files and details. Deleting your
+  account removes everything described above.</p>
+
+  <h2>Your choices and rights</h2>
+  <ul>
+    <li><strong>Delete your account and all data:</strong> in the app, <em>Settings → Account → Delete account</em>, or use the
+    <a href="delete-account.html">account deletion page</a>.</li>
+    <li>Edit or delete any trip or ticket in the app.</li>
+    <li>Ask us for a copy of your data or a correction by emailing the address above.</li>
+  </ul>
+  <p>Depending on where you live (for example under the GDPR or India's DPDP Act) you may have further rights to access,
+  correct, port or erase your data and to withdraw consent. Contact us and we will respond.</p>
+
+  <h2>Children</h2>
+  <p>Trippzy is not directed at children under 13, and we do not knowingly collect their data.</p>
+
+  <h2>Changes</h2>
+  <p>If we change this policy in a meaningful way we will update the date above and, where appropriate, tell you in the app.</p>
+</main>
+</body>
+</html>

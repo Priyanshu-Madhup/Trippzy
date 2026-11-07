@@ -1,0 +1,12 @@
+# Keep secrets, local state and dev files out of the image / the upload to Railway.
+.env
+.env.*
+!.env.example
+.venv
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+tests
+scripts
+.git
