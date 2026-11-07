@@ -43,30 +43,31 @@
   <h2>Your location (optional)</h2>
   <p>If you allow it, the app reads your approximate location <strong>only while it is open</strong> to show a travel note on the
   Home screen: how far you are from your airport or station and when to leave. Your coordinates are sent to our server for that one
-  request, used to calculate the route (via TomTom) and discarded. We do not store them, log them, or keep a location history, and the
+  request, used to calculate the route (via our routing provider) and discarded. We do not store them, log them, or keep a location history, and the
   app never reads your location in the background. You can decline or turn it off in your phone's settings; the rest of the app works without it.</p>
   <p>On the Edit-profile screen you can optionally add your gender, age and country, and a profile picture. These are used only to
-  personalise your profile, are stored with your account (the picture is stored by our sign-in provider, Clerk), and can be cleared
+  personalise your profile, are stored with your account (the picture is stored by our sign-in provider), and can be cleared
   at any time. Profile avatars offered in the app are public-domain illustrations by DiceBear.</p>
   <p>If you turn on calendar reminders, the app adds events for your tickets to a "Trippzy" calendar on your phone. This is stored only on your phone's calendar.</p>
 
   <h2>How your documents are processed</h2>
   <p>When you upload a document, it is stored privately and a text version is sent to an AI model to extract the booking
-  details. We use OpenRouter to reach the model and ask providers not to retain or train on your data. We do not use your
+  details. We ask our AI provider not to retain or train on your data. We do not use your
   documents to train models. The extraction runs on our servers; your phone never holds our AI keys.</p>
 
-  <h2>Who processes your data</h2>
+  <h2>Where your data is stored, and who processes it</h2>
   <table>
-    <tr><th>Service</th><th>Purpose</th></tr>
-    <tr><td>Clerk</td><td>Sign-in and account management</td></tr>
-    <tr><td>MongoDB Atlas</td><td>Database for your trips, tickets and extracted details</td></tr>
-    <tr><td>Cloudflare R2</td><td>Private storage of your uploaded files</td></tr>
-    <tr><td>OpenRouter and the model provider it routes to</td><td>Reading your documents with AI</td></tr>
-    <tr><td>Open-Meteo, Wikipedia, Google News, Wikimedia Commons, logo and favicon services</td><td>Weather, destination photos, news and brand logos. These receive public lookups such as a destination or airline name, never your account details or documents</td></tr>
-    <tr><td>TomTom</td><td>Routing and traffic for the travel note. Receives your coordinates and your airport or station's position for that single request, not your name or account details</td></tr>
-    <tr><td>Railway</td><td>Hosting of our servers</td></tr>
+    <tr><th>What</th><th>Where / who</th></tr>
+    <tr><td>Your account, trips, tickets and extracted details</td><td>Our database, hosted in <strong>India</strong></td></tr>
+    <tr><td>Your uploaded PDFs and photos</td><td>Private file storage in <strong>North America</strong></td></tr>
+    <tr><td>Requests handled by our servers</td><td>Servers in the <strong>United States</strong>. Your data passes through them to reach the database and storage, and isn't kept there</td></tr>
+    <tr><td>Sign-in and account security</td><td>A sign-in provider operating in the <strong>United States</strong></td></tr>
+    <tr><td>Reading your documents</td><td>A third-party AI service, which may process the text of your documents in the <strong>United States</strong> and other countries. It is instructed not to retain or train on your data</td></tr>
+    <tr><td>Traffic for the travel note</td><td>A routing provider. It receives your coordinates and your airport or station's position for that single request, not your name or account details</td></tr>
+    <tr><td>Weather, destination photos, news, logos</td><td>Public data services. They receive public lookups such as a destination or airline name, never your account details or documents</td></tr>
   </table>
-  <p>These providers act on our behalf. We do not sell your personal data and we do not share it for advertising.</p>
+  <p>Because these parts are in different countries, your data crosses borders when you use the app. All of it is encrypted in transit.
+  These providers act on our behalf. We do not sell your personal data and we do not share it for advertising.</p>
 
   <h2>Security</h2>
   <p>Data is encrypted in transit (HTTPS). Files are stored privately; the app receives short-lived links that expire in

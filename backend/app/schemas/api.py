@@ -68,6 +68,15 @@ class ProfileOut(_Out):
     avatar_url: str | None = None
     preferences: Preferences = Field(default_factory=Preferences)
     created_at: datetime
+    # Terms & Privacy: which version this user agreed to (null = never), and the version they must agree to now.
+    terms_accepted_version: str | None = None
+    terms_accepted_at: datetime | None = None
+    terms_current_version: str | None = None
+
+
+class TermsAccept(BaseModel):
+    version: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=32)]
+    app_version: Annotated[str, StringConstraints(strip_whitespace=True, max_length=32)] | None = None
 
 
 NameStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
@@ -282,6 +291,7 @@ class NoteRequest(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
     timezone: str | None = Field(default=None, max_length=64)  # IANA zone of the phone, e.g. "Asia/Kolkata"
+    refresh: bool = False  # the user tapped refresh: skip the cached answer
 
 
 class NoteTraffic(_Out):
@@ -319,3 +329,4 @@ class TripNote(_Out):
     body: str | None = None
     tips: list[str] = []
     route_checked: bool = False
+    fresh_for_s: int | None = None  # how long the app may reuse this note without asking again

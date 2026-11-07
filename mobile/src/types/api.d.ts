@@ -62,6 +62,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Terms
+         * @description The user agreed to the Terms & Privacy Policy. Stored with the version and the time, so it can be shown later.
+         */
+        post: operations["accept_terms_v1_me_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/place-info": {
         parameters: {
             query?: never;
@@ -556,6 +576,11 @@ export interface components {
             lat: number;
             /** Lng */
             lng: number;
+            /**
+             * Refresh
+             * @default false
+             */
+            refresh: boolean;
             /** Timezone */
             timezone?: string | null;
         };
@@ -650,6 +675,12 @@ export interface components {
             /** Name */
             name?: string | null;
             preferences?: components["schemas"]["Preferences"];
+            /** Terms Accepted At */
+            terms_accepted_at?: string | null;
+            /** Terms Accepted Version */
+            terms_accepted_version?: string | null;
+            /** Terms Current Version */
+            terms_current_version?: string | null;
         };
         /** ProfilePatch */
         ProfilePatch: {
@@ -715,6 +746,13 @@ export interface components {
             tickets: number;
             /** Trips */
             trips: number;
+        };
+        /** TermsAccept */
+        TermsAccept: {
+            /** App Version */
+            app_version?: string | null;
+            /** Version */
+            version: string;
         };
         /** TicketOut */
         TicketOut: {
@@ -1014,6 +1052,8 @@ export interface components {
             distance_km?: number | null;
             /** Drive Minutes */
             drive_minutes?: number | null;
+            /** Fresh For S */
+            fresh_for_s?: number | null;
             /** Headline */
             headline?: string | null;
             /** Leave By Local */
@@ -1369,6 +1409,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsOut"];
+                };
+            };
+        };
+    };
+    accept_terms_v1_me_terms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermsAccept"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

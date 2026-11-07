@@ -121,5 +121,14 @@ class UsersRepo:
     async def update(self, user_id: str, patch: Doc) -> Doc | None:
         return await self.col.find_one_and_update({"_id": user_id}, {"$set": patch}, return_document=ReturnDocument.AFTER)
 
+    async def accept_terms(self, user_id: str, version: str, at, app_version: str | None) -> Doc | None:
+        """Records that the user agreed to `version` (current state + an append-only history). Idempotent per version."""
+        entry = {"version": version, "accepted_at": at, "app_version": app_version}
+        return await self.col.find_one_and_update(
+            {"_id": user_id, "terms_history.version": {"$ne": version}},
+            {"$set": {"terms_version": version, "terms_accepted_at": at}, "$push": {"terms_history": entry}},
+            return_document=ReturnDocument.AFTER,
+        ) or await self.col.find_one_and_update({"_id": user_id}, {"$set": {"terms_version": version}}, return_document=ReturnDocument.AFTER)
+
     async def delete(self, user_id: str) -> bool:
         return (await self.col.delete_one({"_id": user_id})).deleted_count > 0

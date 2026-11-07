@@ -1014,6 +1014,11 @@
             "title": "Lng",
             "type": "number"
           },
+          "refresh": {
+            "default": false,
+            "title": "Refresh",
+            "type": "boolean"
+          },
           "timezone": {
             "anyOf": [
               {
@@ -1293,6 +1298,40 @@
           },
           "preferences": {
             "$ref": "#/components/schemas/Preferences"
+          },
+          "terms_accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms Accepted At"
+          },
+          "terms_accepted_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms Accepted Version"
+          },
+          "terms_current_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms Current Version"
           }
         },
         "required": [
@@ -1587,6 +1626,33 @@
           "storage_bytes"
         ],
         "title": "StatsOut",
+        "type": "object"
+      },
+      "TermsAccept": {
+        "properties": {
+          "app_version": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          },
+          "version": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "TermsAccept",
         "type": "object"
       },
       "TicketOut": {
@@ -2827,6 +2893,17 @@
             ],
             "title": "Drive Minutes"
           },
+          "fresh_for_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fresh For S"
+          },
           "headline": {
             "anyOf": [
               {
@@ -3687,6 +3764,48 @@
           }
         },
         "summary": "Stats",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/terms": {
+      "post": {
+        "description": "The user agreed to the Terms & Privacy Policy. Stored with the version and the time, so it can be shown later.",
+        "operationId": "accept_terms_v1_me_terms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TermsAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Terms",
         "tags": [
           "me"
         ]

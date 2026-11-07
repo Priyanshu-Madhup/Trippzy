@@ -1,16 +1,20 @@
 import { useAuth } from '@clerk/expo';
-import { Redirect, Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, usePathname, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { UpdateGate } from '@/components/common/UpdateGate';
 import { ShareWatcher } from '@/features/share/ShareWatcher';
 import { shareEnabled } from '@/lib/env';
 import { UIContext, type UIContextValue } from '@/hooks/useUI';
+import { useProfile } from '@/hooks/useProfile';
 import { UploadProvider } from '@/hooks/useUpload';
+import { needsTerms } from '@/services/terms';
 
 /** Authenticated app chrome: the upload queue and global actions. Signed-out users are sent to /welcome. */
 export default function AppLayout() {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const { data: profile } = useProfile();
 
   // "New trip" / "Edit trip" are real screens (slide-up modals), not an overlay host.
   const ui = useMemo<UIContextValue>(
@@ -26,6 +30,8 @@ export default function AppLayout() {
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/welcome" />;
+  // Everyone must have accepted the current Terms & Privacy Policy before using the app (checked right after sign-up).
+  if (needsTerms(profile) && pathname !== '/terms') return <Redirect href="/terms" />;
 
   return (
     <UIContext.Provider value={ui}>
@@ -33,6 +39,7 @@ export default function AppLayout() {
         {shareEnabled ? <ShareWatcher /> : null}
         <UpdateGate />
         <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 260, contentStyle: { backgroundColor: 'transparent' } }}>
+          <Stack.Screen name="terms" options={{ gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="trip/[tripId]" options={{ animation: 'slide_from_right', animationDuration: 280 }} />
           <Stack.Screen name="viewer/[ticketId]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="share" options={{ presentation: 'modal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }} />

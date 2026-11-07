@@ -4,7 +4,7 @@
 Create a **private** GitHub repo, then from `X:\Trippzy`:
 ```
 git add -A && git commit -m "Trippzy" && git branch -M main
-git remote add origin https://github.com/<you>/<repo>.git && git push -u origin main
+git remote add origin https://github.com/Priyanshu-Madhup/Trippzy.git && git push -u origin main
 ```
 `.env` files are git-ignored. Nothing secret is pushed.
 
@@ -12,7 +12,7 @@ git remote add origin https://github.com/<you>/<repo>.git && git push -u origin 
 1. Railway → **New Project → Deploy from GitHub repo** → pick the repo.
 2. Service **Settings → Source → Root Directory = `backend`** (it then uses the Dockerfile + `railway.json`, healthcheck `/healthz`).
 3. **Variables → Raw Editor** → paste `backend/.env.railway` (made on your PC, git-ignored). Then fill in:
-   - `GITHUB_REPO=<you>/<repo>`
+   - `GITHUB_REPO=Priyanshu-Madhup/Trippzy`
    - `PUBLIC_BASE_URL=https://<your-service>.up.railway.app` (after step 4)
    - `GITHUB_TOKEN` (private repo only): fine-grained token, this repo, **Contents: read-only**
    - `CLERK_SECRET_KEY` (needed for “Delete account”)

@@ -129,7 +129,7 @@ function NoteBody({ note }: { note: TripNote }) {
         </View>
       ) : null}
 
-      <Text className="mt-3 text-[10px] text-faint">{note.route_checked ? `${t?.basis === 'live' ? 'Live' : 'Typical'} traffic by TomTom · ` : ''}Your location isn’t stored.</Text>
+      <Text className="mt-3 text-[10px] text-faint">{note.route_checked ? `${t?.basis === 'live' ? 'Live' : 'Typical'} traffic by TomTom · ` : ''}Your location isn’t stored on our servers.</Text>
     </View>
   );
 }
@@ -165,7 +165,7 @@ export function TrippzyNote({ tripId }: { tripId: string }) {
           <Icon as={MapPin} size={16} className="text-primary-ink" />
           <Text className="font-geist-semibold text-sm text-primary-ink">{access.status === 'blocked' ? 'Open settings' : 'Use my location'}</Text>
         </Pressable>
-        <Text className="mt-3 text-[11px] text-faint">Only used for this note. It isn’t stored.</Text>
+        <Text className="mt-3 text-[11px] text-faint">Only used for this note. Our servers never store it.</Text>
       </View>
     );
   }
@@ -185,7 +185,7 @@ export function TrippzyNote({ tripId }: { tripId: string }) {
   if (q.isError || !q.data) {
     return (
       <View style={soft} className={panel}>
-        <Header onRefresh={() => void q.refetch()} />
+        <Header onRefresh={() => void q.refresh()} />
         <Text className="text-[14px] text-muted">{q.error instanceof Error ? q.error.message : 'Couldn’t put your note together right now.'}</Text>
       </View>
     );
@@ -194,7 +194,7 @@ export function TrippzyNote({ tripId }: { tripId: string }) {
   if (q.data.state === 'no_departure') {
     return (
       <View style={soft} className={panel}>
-        <Header onRefresh={() => void q.refetch()} spinning={q.isFetching} />
+        <Header onRefresh={() => void q.refresh()} spinning={q.isFetching} />
         <Text className="text-[14px] text-muted">No upcoming flight, train or bus on this trip yet. Add a ticket and your travel note will show up here.</Text>
       </View>
     );
@@ -202,7 +202,7 @@ export function TrippzyNote({ tripId }: { tripId: string }) {
 
   return (
     <View style={soft} className={panel} accessibilityLabel="Trippzy note">
-      <Header onRefresh={() => void q.refetch()} spinning={q.isFetching} />
+      <Header onRefresh={() => void q.refresh()} spinning={q.isFetching} />
       <NoteBody note={q.data} />
     </View>
   );

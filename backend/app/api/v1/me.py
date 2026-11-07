@@ -5,12 +5,23 @@ from fastapi import APIRouter, Response
 
 from app.api.deps import AuthedUser, Ctx, CtxDep, IpGuard, UserDep
 from app.core.errors import AppError, not_found
+from app.core.legal import TERMS_VERSION
 from app.core.security import forget_user
+from app.db import now
 from app.repositories.base import to_api
-from app.schemas.api import ProfileOut, ProfilePatch, StatsOut
+from app.schemas.api import ProfileOut, ProfilePatch, StatsOut, TermsAccept
 
 router = APIRouter(prefix="/v1/me", tags=["me"], dependencies=[IpGuard])
 log = logging.getLogger("trippzy.me")
+
+
+def _profile(doc: dict) -> dict:
+    return {
+        **to_api(doc),
+        "terms_accepted_version": doc.get("terms_version"),
+        "terms_accepted_at": doc.get("terms_accepted_at"),
+        "terms_current_version": TERMS_VERSION,
+    }
 
 
 @router.get("", response_model=ProfileOut)
@@ -18,7 +29,18 @@ async def get_me(user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
     doc = await ctx.users.get(user.id)
     if not doc:
         raise not_found("Profile")
-    return to_api(doc)
+    return _profile(doc)
+
+
+@router.post("/terms", response_model=ProfileOut)
+async def accept_terms(body: TermsAccept, user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
+    """The user agreed to the Terms & Privacy Policy. Stored with the version and the time, so it can be shown later."""
+    if body.version != TERMS_VERSION:
+        raise AppError(409, "terms_changed", "The terms were updated. Please read and accept the latest version.")
+    doc = await ctx.users.accept_terms(user.id, body.version, now(), body.app_version)
+    if not doc:
+        raise not_found("Profile")
+    return _profile(doc)
 
 
 @router.patch("", response_model=ProfileOut)
@@ -44,7 +66,7 @@ async def patch_me(body: ProfilePatch, user: AuthedUser = UserDep, ctx: Ctx = Ct
         prefs = {k: v for k, v in sent["preferences"].items() if k == "home_widgets" or v is not None}
         patch["preferences"] = {**(existing.get("preferences") or {}), **prefs}
     doc = await ctx.users.update(user.id, patch) if patch else existing
-    return to_api(doc)
+    return _profile(doc)
 
 
 @router.get("/stats", response_model=StatsOut)

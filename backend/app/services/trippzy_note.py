@@ -8,10 +8,12 @@ The phone's position is used for this one request and is neither stored nor logg
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import math
 import re
+import time
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -30,7 +32,57 @@ log = logging.getLogger("trippzy.note")
 TOMTOM = "https://api.tomtom.com"
 DEPARTURE_KINDS = ("flight", "train", "bus")
 LEAVE_PAD_MIN = 10  # parking / drop-off / finding the entrance
-_cache: TTLCache[str, dict] = TTLCache(maxsize=500, ttl=600)
+# How long a finished note stays good, by how soon the departure is. Far-off trips change slowly (the leave-by time uses
+# predicted traffic anyway); close to departure the road matters, so those are re-checked sooner.
+_NOTE_TTL = ((60, 300), (6 * 60, 20 * 60), (24 * 60, 60 * 60), (48 * 60, 3 * 3600))  # (minutes until departure < , ttl seconds)
+_NOTE_TTL_FAR = 6 * 3600
+_notes: dict[str, tuple[float, dict]] = {}
+_NOTES_MAX = 500
+# A station doesn't move: look it up once. Wording of the same facts is reused instead of asking the model again.
+_places: TTLCache[str, dict | None] = TTLCache(maxsize=2000, ttl=30 * 86400)
+_words: TTLCache[str, dict] = TTLCache(maxsize=1000, ttl=6 * 3600)
+
+
+def note_ttl_s(minutes_until_departure: float) -> int:
+    for under, ttl in _NOTE_TTL:
+        if minutes_until_departure < under:
+            return ttl
+    return _NOTE_TTL_FAR
+
+
+def fingerprint(user_id: str, departures: list[tuple[datetime, dict]], lat: float, lng: float, user_tz: str | None) -> str:
+    """Identifies "the same question": same user, same upcoming tickets (unedited), roughly the same spot (~1 km)."""
+    parts = [
+        [t.get("_id"), str(t.get("updated_at") or ""), t.get("processing_status"), t.get("travel_date"), t.get("start_time"), t.get("end_time"), t.get("title")]
+        for _, t in departures[:4]
+    ]
+    raw = json.dumps([user_id, parts, round(lat, 2), round(lng, 2), user_tz], default=str, sort_keys=True)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _remember(key: str, note: dict, ttl: int) -> None:
+    if len(_notes) >= _NOTES_MAX:
+        now = time.monotonic()
+        for k in [k for k, (exp, _) in _notes.items() if exp <= now] or [next(iter(_notes))]:
+            _notes.pop(k, None)
+    _notes[key] = (time.monotonic() + ttl, note)
+
+
+def clear_note_caches() -> None:
+    _notes.clear()
+    _places.clear()
+    _words.clear()
+
+
+async def _place_for(http, key: str, name: str, city: str | None, kind: str, near: tuple[float, float]):
+    k = f"{kind}|{name.lower()}|{(city or '').lower()}|{round(near[0], 1)}|{round(near[1], 1)}"
+    if k in _places:
+        return _places[k]
+    found = await geocode_station(http, key, name, city, kind, near)
+    if found:  # don't remember failures: a blip shouldn't stick for a month
+        _places[k] = found
+    return found
+
 
 _GENERIC = {"railway", "station", "junction", "jn", "central", "bus", "stand", "terminus", "rly", "railways", "terminal", "airport", "international"}
 
@@ -275,6 +327,16 @@ def _fallback_text(facts: dict) -> dict:
 
 
 async def _word_it(ctx: Ctx, facts: dict) -> dict:
+    wkey = hashlib.sha256(json.dumps({k: v for k, v in facts.items() if k != "minutes_until_departure"}, sort_keys=True, default=str).encode()).hexdigest()
+    if wkey in _words:
+        return _words[wkey]
+    words, from_model = await _word_it_uncached(ctx, facts)
+    if from_model:  # the plain fallback isn't remembered, so the next try can still get the real wording
+        _words[wkey] = words
+    return words
+
+
+async def _word_it_uncached(ctx: Ctx, facts: dict) -> tuple[dict, bool]:
     try:
         out = await ctx.ai.structured(
             system=prompts.TRIPPZY_NOTE_SYSTEM,
@@ -287,21 +349,27 @@ async def _word_it(ctx: Ctx, facts: dict) -> dict:
         )
         headline, body = s(out.get("headline"), 80), s(out.get("body"), 600)
         if headline and body:
-            return {"headline": headline, "body": body, "tips": [t for t in (s(x, 100) for x in (out.get("tips") or [])[:3]) if t]}
+            return {"headline": headline, "body": body, "tips": [t for t in (s(x, 100) for x in (out.get("tips") or [])[:3]) if t]}, True
     except Exception:
         log.warning("note wording failed; using the plain version")
-    return _fallback_text(facts)
+    return _fallback_text(facts), False
 
 
-async def build_note(ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], lat: float, lng: float, user_tz: str | None) -> dict:
+async def build_note(ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], lat: float, lng: float, user_tz: str | None, refresh: bool = False) -> dict:
     now = datetime.now(UTC)
     departures = next_departures(tickets, now, user_tz)
     if not departures:
         return {"state": "no_departure", "connections": [], "tips": []}
     dep_at, ticket = departures[0]
-    key = f"{user_id}:{ticket['_id']}:{round(lat, 3)}:{round(lng, 3)}:{int(now.timestamp() // 600)}"
-    if key in _cache:
-        return _cache[key]
+    key = fingerprint(user_id, departures, lat, lng, user_tz)
+    hit = _notes.get(key)
+    if hit:
+        expires, cached = hit
+        left = int(expires - time.monotonic())
+        age = cached["fresh_for_s"] - left
+        # A refresh tap re-checks the road, but not more than once a minute (each check costs real money).
+        if left > 0 and (not refresh or age < 60):
+            return {**cached, "fresh_for_s": left}
 
     settings: Settings = ctx.settings
     kind = ticket["document_type"]
@@ -319,7 +387,7 @@ async def build_note(ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], la
         elif settings.tomtom_api_key:
             d = _details(ticket).get("departure") or {}
             if d.get("station") or d.get("city"):
-                place = await geocode_station(http, settings.tomtom_api_key, d.get("station") or "", d.get("city"), kind, me)
+                place = await _place_for(http, settings.tomtom_api_key, d.get("station") or "", d.get("city"), kind, me)
 
         route, live = None, False
         if place and settings.tomtom_api_key:
@@ -378,9 +446,13 @@ async def build_note(ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], la
         "route_checked": bool(route),
         **words,
     }
-    _cache[key] = note
+    ttl = note_ttl_s(facts["minutes_until_departure"]) if route or kind == "flight" else 120  # a failed road check is retried soon
+    note["fresh_for_s"] = ttl
+    _remember(key, note, ttl)
     return note
 
 
-async def build_note_guarded(ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], lat: float, lng: float, user_tz: str | None) -> dict:
-    return await asyncio.wait_for(build_note(ctx, user_id, trip, tickets, lat, lng, user_tz), 40)
+async def build_note_guarded(
+    ctx: Ctx, user_id: str, trip: dict, tickets: list[dict], lat: float, lng: float, user_tz: str | None, refresh: bool = False
+) -> dict:
+    return await asyncio.wait_for(build_note(ctx, user_id, trip, tickets, lat, lng, user_tz, refresh), 40)

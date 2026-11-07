@@ -60,7 +60,9 @@ Data types collected (all: *required for app functionality*, *not* used for adve
 | App activity / diagnostics (crash logs) | Only if Sentry is added | Declare it if you add crash reporting |
 | Contacts, financial info, health, messages, audio, video, web history | **No** | The `Price` extracted from a ticket is booking text, not payment data; the app takes no payments |
 
-Data processors to name in the policy: Clerk, MongoDB Atlas, Cloudflare, OpenRouter (and its model provider), TomTom, Railway.
+The policy describes processors by purpose and country (database: India; files: North America; servers and sign-in: United States), without naming the technology. If Play asks, list them by category.
+
+The in-app Terms screen (shown after sign-up) and `docs/legal/terms.html` come from `mobile/src/lib/legal.json`. After editing it, run `python tools/make_terms.py`, and bump `TERMS_VERSION` in `backend/app/core/legal.py` (and `version` in the JSON) if users must re-accept.
 
 ## 5. Permissions (declared in `mobile/app.json`)
 - `CAMERA` — only to photograph a ticket.

@@ -19,4 +19,4 @@ async def trippzy_note(trip_id: str, body: NoteRequest, user: AuthedUser = UserD
     if not ctx.settings.tomtom_api_key:
         raise AppError(503, "server_not_configured", "Traffic lookups aren't set up on the server yet.")
     tickets = await ctx.tickets.for_trip(user.id, trip_id)
-    return await build_note_guarded(ctx, user.id, trip, tickets, body.lat, body.lng, body.timezone)
+    return await build_note_guarded(ctx, user.id, trip, tickets, body.lat, body.lng, body.timezone, body.refresh)

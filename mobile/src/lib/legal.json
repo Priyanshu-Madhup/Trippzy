@@ -1,0 +1,43 @@
+{
+  "version": "2026-11-08",
+  "title": "Terms & Privacy",
+  "intro": "Please read this before you start. It’s short, and it explains what Trippzy does with your tickets and where your data lives.",
+  "locations": [
+    { "what": "Your account, trips and tickets", "where": "India", "note": "Our database" },
+    { "what": "Your uploaded PDFs and photos", "where": "North America", "note": "Private file storage" },
+    { "what": "Trippzy’s servers (they handle each request)", "where": "United States", "note": "Data passes through here, it isn’t kept here" },
+    { "what": "Sign-in and account security", "where": "United States", "note": "Our sign-in provider" },
+    { "what": "Reading your documents", "where": "United States and other countries", "note": "A third-party AI service reads the text of what you upload to extract the booking details" }
+  ],
+  "sections": [
+    {
+      "title": "What Trippzy does",
+      "body": ["Trippzy organises your travel bookings. You upload tickets and confirmations, we read them and build your trip.", "The readings, leave-by times and reminders are generated automatically and can be wrong. Always check important details, such as times and booking references, against the original ticket. Trippzy isn’t a substitute for the official booking."]
+    },
+    {
+      "title": "Your data and uploads",
+      "body": ["Your tickets and trips are yours. You allow us to store and process them only to run the app for you.", "Only upload documents you’re entitled to use. These can include personal details like passenger names, booking references and passport or visa information. We don’t sell your data, use it for advertising, or use it to train AI models."]
+    },
+    {
+      "title": "Where your data is stored",
+      "body": ["Different parts of your data live in different countries, as shown above. Your data can cross borders between these services when you use the app. We use providers that protect it in transit and at rest, and every request is checked against your account."]
+    },
+    {
+      "title": "Location and calendar (optional)",
+      "body": ["If you allow it, your location is used only while the app is open, to work out how far you are from your airport or station and when to leave. We don’t store it or keep a location history.", "If you turn on calendar reminders, events are added to a Trippzy calendar on your phone. They stay on your phone."]
+    },
+    {
+      "title": "Updates",
+      "body": ["When the app opens it checks whether a newer version is available and tells you what changed. Nothing is installed without your OK."]
+    },
+    {
+      "title": "Deleting your data",
+      "body": ["You can delete a ticket or a trip at any time. To remove everything, including your account, go to Settings → Account → Delete account. This can’t be undone."]
+    },
+    {
+      "title": "Changes and contact",
+      "body": ["If these terms change in a way that matters, we’ll ask you to review and accept them again. Questions or requests about your data: use the contact details on Trippzy’s store page."]
+    }
+  ],
+  "consent": "I’ve read and agree to the Terms and Privacy Policy"
+}

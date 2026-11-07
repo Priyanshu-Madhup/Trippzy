@@ -116,6 +116,11 @@ export default function Settings() {
 
         <Section title="About">
           <Row label="Trippzy" value={`Version ${currentVersion}`} />
+          <Row label="Terms & Privacy" hint="What we do with your data, and where it’s stored.">
+            <Button variant="secondary" size="sm" onPress={() => router.push('/terms')}>
+              Read
+            </Button>
+          </Row>
           <Row label={info?.update_available ? `Version ${info.latest} is available` : 'Updates'} hint={info?.update_available ? 'Tap to download it. Your trips stay as they are.' : info?.latest ? 'You’re up to date.' : 'Check whether a newer version is out.'}>
             {info?.update_available ? (
               <Button size="sm" icon={Download} onPress={() => startUpdate(info)}>

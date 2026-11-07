@@ -120,3 +120,92 @@ async def test_endpoint_builds_a_note_without_leaking_location(client, auth, mon
     # another user can't ask about this trip
     other = await client.post(f"/v1/trips/{trip_id}/note", json={"lat": 1, "lng": 1}, headers=auth("user_B"))
     assert other.status_code == 404
+
+
+@pytest.fixture(autouse=True)
+def _clean_note_caches():
+    tn.clear_note_caches()
+    yield
+    tn.clear_note_caches()
+
+
+def test_ttl_is_shorter_the_closer_the_departure():
+    assert tn.note_ttl_s(30) == 300
+    assert tn.note_ttl_s(120) == 20 * 60
+    assert tn.note_ttl_s(600) == 60 * 60
+    assert tn.note_ttl_s(1800) == 3 * 3600
+    assert tn.note_ttl_s(5000) == 6 * 3600
+
+
+def test_fingerprint_changes_only_when_the_question_changes():
+    when = datetime(2026, 11, 10, 8, 15, tzinfo=UTC)
+    t = ticket(updated_at="2026-11-01T10:00:00")
+    base = tn.fingerprint("u", [(when, t)], 23.341, 85.311, "Asia/Kolkata")
+    assert base == tn.fingerprint("u", [(when, dict(t))], 23.342, 85.312, "Asia/Kolkata")  # a few metres away: same question
+    assert base != tn.fingerprint("u", [(when, {**t, "updated_at": "2026-11-02T10:00:00"})], 23.341, 85.311, "Asia/Kolkata")  # ticket edited
+    assert base != tn.fingerprint("u", [(when, {**t, "start_time": "14:00"})], 23.341, 85.311, "Asia/Kolkata")
+    assert base != tn.fingerprint("u", [(when, t)], 23.5, 85.311, "Asia/Kolkata")  # moved ~20 km
+    assert base != tn.fingerprint("other", [(when, t)], 23.341, 85.311, "Asia/Kolkata")
+
+
+async def test_same_question_is_answered_from_cache(client, auth, ctx, monkeypatch):
+    headers = auth("user_A")
+    trip_id = (await client.post("/v1/trips", json={"name": "Trip"}, headers=headers)).json()["id"]
+    ctx.settings.tomtom_api_key = "test-key"
+    calls = {"route": 0, "geocode": 0, "words": 0}
+
+    async def fake_route(http, key, origin, dest, depart_at):
+        calls["route"] += 1
+        return {"seconds": 1800, "meters": 12000, "delay_seconds": 300, "jams": 0, "roadworks": 0, "closures": 0}
+
+    async def fake_geocode(http, key, name, city, kind, near):
+        calls["geocode"] += 1
+        return {"lat": 23.31, "lon": 85.32, "name": "Ranchi Railway Station"}
+
+    monkeypatch.setattr(tn, "tomtom_route", fake_route)
+    monkeypatch.setattr(tn, "geocode_station", fake_geocode)
+    original = ctx.ai.structured
+
+    async def counting(**kw):
+        calls["words"] += 1
+        return {"headline": "Leave soon", "body": "Leave by then.", "tips": []}
+
+    ctx.ai.structured = counting
+    when = datetime.now(UTC) + timedelta(days=3)
+    day = when.strftime("%Y-%m-%d")
+    await ctx.tickets.insert(
+        {
+            "_id": "tk9",
+            "user_id": "user_A",
+            "trip_id": trip_id,
+            "document_type": "train",
+            "processing_status": "completed",
+            "title": "A → B",
+            "travel_date": day,
+            "start_time": "13:45",
+            "end_date": day,
+            "end_time": "15:45",
+            "updated_at": "2026-11-01T10:00:00",
+            "structured_data": {"details": {"departure": {"station": "RANCHI", "city": "Ranchi"}}},
+        }
+    )
+    ask = lambda **extra: client.post(f"/v1/trips/{trip_id}/note", json={"lat": 23.34, "lng": 85.31, "timezone": "Asia/Kolkata", **extra}, headers=headers)  # noqa: E731
+
+    first = (await ask()).json()
+    cost_after_first = dict(calls)
+    assert cost_after_first["words"] == 1 and cost_after_first["geocode"] == 1 and cost_after_first["route"] >= 1
+    assert first["fresh_for_s"] == 6 * 3600  # 3 days out: re-check rarely
+
+    again = (await ask()).json()
+    assert calls == cost_after_first  # nothing was paid for the second time
+    assert again["headline"] == first["headline"] and 0 < again["fresh_for_s"] <= first["fresh_for_s"]
+
+    await ask(refresh=True)  # tapping refresh right away doesn't re-bill either
+    assert calls == cost_after_first
+
+    # Editing the ticket changes the question → fresh answer, but the station and the wording are reused where they still apply
+    await ctx.tickets.update("user_A", "tk9", {"start_time": "14:30", "updated_at": "2026-11-02T10:00:00"})
+    await ask()
+    assert calls["route"] > cost_after_first["route"]
+    assert calls["geocode"] == 1  # the station was remembered
+    ctx.ai.structured = original

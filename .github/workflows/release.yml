@@ -1,9 +1,10 @@
 name: release-apk
-# Publish a GitHub Release (tag like v1.1.0, with the "what's new" text in its description).
-# This builds the Android APK and attaches it; the app then offers the update to everyone on an older version.
+# Push a tag like v1.1.0 (git tag -a v1.1.0 -m "bullet-point notes…"), or publish a release in the GitHub UI.
+# This creates the release (its notes come from the tag message), builds the Android APK and attaches it;
+# the app then offers the update to everyone on an older version.
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -22,6 +23,16 @@ jobs:
       EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Make sure the release exists (notes = the tag message)
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --tags --force
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
+            gh release create "$GITHUB_REF_NAME" --title "Trippzy ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
