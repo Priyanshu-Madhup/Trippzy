@@ -91,7 +91,7 @@ class Settings(BaseSettings):
 
 # Wikimedia (photos, "About" text) answers 403 to User-Agents that don't identify the app with a
 # contact URL. Replace with your real site / repo URL once you have one.
-USER_AGENT = "Trippzy/1.0 (+https://trippzy.app; travel document organizer) httpx"
+USER_AGENT = "Trippzy/1.0 (+https://trippzy.app; support@trippzy.app; travel document organizer) httpx"
 
 
 @lru_cache
