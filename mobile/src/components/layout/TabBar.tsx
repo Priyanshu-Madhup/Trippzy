@@ -1,6 +1,8 @@
 import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
 import { House, Map, Plus, Settings, UserRound, type LucideIcon } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/Icon';
 import { Text } from '@/components/ui/Text';
@@ -17,6 +19,20 @@ const TABS: Record<string, { label: string; icon: LucideIcon }> = {
 // Home · Trips · [+] · Profile · Settings — same order as Trippy's phone navigation.
 const LEFT = ['index', 'trips'];
 const RIGHT = ['profile', 'settings'];
+
+/** The tab icon lifts and settles with a spring when its tab becomes active. */
+function TabIcon({ icon, focused }: { icon: LucideIcon; focused: boolean }) {
+  const lift = useSharedValue(focused ? 1 : 0);
+  useEffect(() => {
+    lift.value = withSpring(focused ? 1 : 0, { damping: 14, stiffness: 220 });
+  }, [focused, lift]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * lift.value }, { scale: 1 + 0.12 * lift.value }] }));
+  return (
+    <Animated.View style={style}>
+      <Icon as={icon} size={22} className={focused ? 'text-ink' : 'text-faint'} />
+    </Animated.View>
+  );
+}
 
 /** Trippy's MobileNav: hairline top border, 4 tabs and a raised 58px "New trip" button. */
 export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
@@ -42,7 +58,7 @@ export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
         }}
         className="h-14 flex-1 items-center justify-center gap-1"
       >
-        <Icon as={icon} size={22} className={focused ? 'text-ink' : 'text-faint'} />
+        <TabIcon icon={icon} focused={focused} />
         <Text className={cn('font-geist-medium text-[11px]', focused ? 'text-ink' : 'text-faint')}>{label}</Text>
       </Pressable>
     );

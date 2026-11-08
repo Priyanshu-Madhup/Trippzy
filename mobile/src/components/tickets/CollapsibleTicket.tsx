@@ -1,4 +1,4 @@
-import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import type { Ticket } from '@/types';
 import { CompactTicket } from './CompactTicket';
 import { TicketCard } from './TicketCard';
@@ -30,7 +30,7 @@ export function CollapsibleTicket({
   return (
     <Animated.View
       layout={LinearTransition.springify().stiffness(320).damping(34).mass(0.9)}
-      entering={FadeInDown.delay(Math.min(index, 8) * 50).duration(400)}
+      entering={FadeIn.delay(Math.min(index, 4) * 30).duration(220)}
       exiting={FadeOut.duration(180)}
       onLayout={(e) => onLayoutY?.(ticket.id, e.nativeEvent.layout.y)}
     >

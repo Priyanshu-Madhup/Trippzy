@@ -1,7 +1,7 @@
 import { LogOut as CheckoutIcon } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Icon } from '@/components/ui/Icon';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,7 @@ export function TripTimeline({ tickets, onSelect }: { tickets: Ticket[]; onSelec
             {events.map((e, i) => {
               const meta = TYPE_META[e.type];
               return (
-                <Animated.View key={e.key} entering={FadeInDown.delay(Math.min(i, 4) * 40 + (gi === 0 ? 50 : 0)).duration(300)} className="relative py-2">
+                <Animated.View key={e.key} entering={FadeIn.delay(Math.min(i, 3) * 30).duration(220)} className="relative py-2">
                   <View className="absolute -left-[48px] top-2.5 size-10 rounded-full border-4 border-bg bg-surface">
                     <View className={cn('flex-1 items-center justify-center rounded-full', e.checkout ? 'bg-surface-2' : meta.tile)}>
                       <Icon as={e.checkout ? CheckoutIcon : meta.icon} size={17} className={e.checkout ? 'text-muted' : meta.text} />

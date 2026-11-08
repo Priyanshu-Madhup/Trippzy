@@ -15,6 +15,7 @@ import { ShareIntentProvider } from 'expo-share-intent';
 import { useEffect, type ReactNode } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppIntro } from '@/components/common/AppIntro';
 import { AppToaster } from '@/components/common/AppToaster';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SetupRequired } from '@/components/common/SetupRequired';
@@ -69,6 +70,7 @@ function Themed() {
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
       <Slot />
       <AppToaster />
+      <AppIntro />
     </>
   );
 }

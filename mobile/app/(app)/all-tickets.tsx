@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/common/EmptyState';
 import { usePullRefresh } from '@/components/common/PullRefresh';
@@ -82,7 +82,7 @@ export default function AllTickets() {
           <EmptyState title={filter === 'all' ? 'No tickets yet' : 'Nothing in this category'} description={filter === 'all' ? 'Upload a ticket to a trip and it will show up here.' : 'Try another category.'} />
         ) : (
           groups.map((g, gi) => (
-            <Animated.View key={g.key} entering={FadeInDown.delay(Math.min(gi, 5) * 50).duration(260)} className="mb-6">
+            <Animated.View key={g.key} entering={FadeIn.duration(220)} className="mb-6">
               {filter === 'all' ? (
                 <View className="mb-2 flex-row items-baseline justify-between px-1">
                   <Text className="font-geist-semibold text-[17px]">{g.label}</Text>

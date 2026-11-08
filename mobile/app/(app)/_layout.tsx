@@ -8,6 +8,8 @@ import { UIContext, type UIContextValue } from '@/hooks/useUI';
 import { useProfile } from '@/hooks/useProfile';
 import { UploadProvider } from '@/hooks/useUpload';
 import { needsTerms } from '@/services/terms';
+import { useTheme } from '@/theme/ThemeProvider';
+import { hex } from '@/theme/tokens';
 
 /** Authenticated app chrome: the upload queue and global actions. Signed-out users are sent to /welcome. */
 export default function AppLayout() {
@@ -15,6 +17,7 @@ export default function AppLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: profile } = useProfile();
+  const { resolved } = useTheme();
 
   // "New trip" / "Edit trip" are real screens (slide-up modals), not an overlay host.
   const ui = useMemo<UIContextValue>(
@@ -38,9 +41,11 @@ export default function AppLayout() {
       <UploadProvider>
         {shareEnabled ? <ShareWatcher /> : null}
         <UpdateGate />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 260, contentStyle: { backgroundColor: 'transparent' } }}>
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 300, contentStyle: { backgroundColor: hex[resolved].bg } }}>
           <Stack.Screen name="terms" options={{ gestureEnabled: false, animation: 'fade' }} />
-          <Stack.Screen name="trip/[tripId]" options={{ animation: 'slide_from_right', animationDuration: 280 }} />
+          <Stack.Screen name="trip/[tripId]" options={{ animation: 'slide_from_right', animationDuration: 300 }} />
+          <Stack.Screen name="all-tickets" options={{ animation: 'slide_from_right', animationDuration: 300 }} />
+          <Stack.Screen name="documents" options={{ animation: 'slide_from_right', animationDuration: 300 }} />
           <Stack.Screen name="viewer/[ticketId]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="share" options={{ presentation: 'modal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }} />
           <Stack.Screen name="edit-profile" options={{ presentation: 'modal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }} />
