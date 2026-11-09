@@ -106,7 +106,7 @@ MAX_CODES = 6
 class FoundCode:
     format: str  # "qr" | "pdf417" | "aztec" | "datamatrix" | "code128" | "barcode" (seen but too low-res to decode)
     text: str  # decoded payload; "" for an undecodable "barcode"
-    png: bytes  # the code cropped from the page, with a quiet zone, ready to show on a white tile
+    png: bytes  # the code cropped from the page, with a quiet zone, trimmed tight, ready to show as-is
     page: int
     area: int  # pixels² on the page; larger = more likely the primary boarding code
     center: tuple[float, float] | None = None  # page coordinates in points (PDFs), to match against embedded images
@@ -131,7 +131,7 @@ def _crop_code(img: Image.Image, bc) -> tuple[bytes, int, tuple[float, float]] |
     w, h = max(xs) - min(xs), max(ys) - min(ys)
     if max(w, h) < MIN_CODE_PX:
         return None
-    pad = max(int(max(w, h) * 0.16), 16)  # quiet zone: scanners need white around the code
+    pad = max(int(max(w, h) * 0.03), 4)  # just enough white that edge bars aren't clipped; the card supplies the rest
     box = (max(min(xs) - pad, 0), max(min(ys) - pad, 0), min(max(xs) + pad, img.width), min(max(ys) + pad, img.height))
     return _png(img.crop(box)), w * h, ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
 
@@ -186,7 +186,10 @@ def _embedded_barcodes(doc, page, page_no: int, decoded: list[FoundCode]) -> lis
             continue
         if not _looks_like_barcode(img):
             continue
-        pad = max(int(max(img.size) * 0.16), 12)
+        ink = np.argwhere(np.asarray(img.convert("L")) < 128)  # trim the image's own white border
+        (top, left), (bottom, right) = ink.min(0), ink.max(0) + 1
+        img = img.crop((left, top, right, bottom))
+        pad = max(int(max(img.size) * 0.03), 2)
         framed = Image.new("RGB", (img.width + 2 * pad, img.height + 2 * pad), "white")
         framed.paste(img, (pad, pad))
         k = max(1, -(-700 // framed.width))  # whole-number upscale keeps the bars sharp

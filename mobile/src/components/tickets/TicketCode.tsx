@@ -1,23 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { Maximize2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { Icon } from '@/components/ui/Icon';
 import { Sheet } from '@/components/ui/Sheet';
-import { Text } from '@/components/ui/Text';
 import { getCachedCode } from '@/services/offline';
 import { getTicketCode } from '@/services/tickets';
 import type { Ticket } from '@/types';
 
 const LABEL: Record<string, string> = { qr: 'QR code', pdf417: 'Barcode', aztec: 'Barcode', datamatrix: 'Barcode', code128: 'Barcode', barcode: 'Barcode' };
+const SQUARE_MAX = 168; // a QR code is shown at a scannable, card-friendly size rather than stretched
 
 /**
- * The QR code / barcode taken from the original document, shown on a white tile (scanners need the
- * contrast, whatever the app theme). The offline copy wins, so it still shows at the gate with no signal.
+ * The QR code / barcode from the original document, exactly as cropped (no extra frame or margin), sitting
+ * in the card's own padding. Its white background is part of the image, so it scans in any theme. The
+ * offline copy wins, so it still shows at the gate with no signal. Tap to enlarge.
  */
 export function TicketCode({ ticket }: { ticket: Ticket }) {
   const [open, setOpen] = useState(false);
+  const [ratio, setRatio] = useState<number | null>(null); // width / height, read from the image itself
   const { data: uri } = useQuery({
     queryKey: ['ticket-code', ticket.id, ticket.updated_at],
     enabled: ticket.has_code,
@@ -25,27 +25,33 @@ export function TicketCode({ ticket }: { ticket: Ticket }) {
     staleTime: 5 * 60_000,
     queryFn: async () => (await getCachedCode(ticket)) ?? (await getTicketCode(ticket.id)).url,
   });
-  if (!ticket.has_code) return null;
+  if (!ticket.has_code || !uri) return null;
   const kind = LABEL[ticket.code_format ?? 'qr'] ?? 'Code';
-  const wide = ticket.code_format !== 'qr' && ticket.code_format !== 'aztec' && ticket.code_format !== 'datamatrix';
+  const aspect = ratio ?? 1;
+  const squareish = aspect > 0.8 && aspect < 1.25;
 
   return (
-    <View className="mt-4 items-center px-5">
+    <View className="mt-4 px-5">
       <Pressable
-        onPress={() => uri && setOpen(true)}
+        onPress={() => setOpen(true)}
         accessibilityRole="imagebutton"
         accessibilityLabel={`${kind} for ${ticket.title ?? 'this ticket'}. Tap to enlarge.`}
-        className="w-full items-center rounded-2xl border border-line bg-white p-3"
+        className="self-center overflow-hidden rounded-lg"
+        style={squareish ? { width: SQUARE_MAX } : { width: '100%' }}
       >
-        {uri ? <Image source={{ uri }} contentFit="contain" style={{ width: '100%', height: wide ? 110 : 170 }} accessibilityIgnoresInvertColors /> : <View style={{ height: wide ? 110 : 170 }} />}
-        <View className="mt-1.5 flex-row items-center gap-1.5">
-          <Icon as={Maximize2} size={12} className="text-[#6b7280]" />
-          <Text className="text-[12px] text-[#6b7280]">{kind} · tap to enlarge</Text>
-        </View>
+        <Image
+          source={{ uri }}
+          contentFit="fill"
+          onLoad={(e) => e.source.width && e.source.height && setRatio(e.source.width / e.source.height)}
+          style={{ width: '100%', aspectRatio: aspect, backgroundColor: '#fff' }}
+          accessibilityIgnoresInvertColors
+        />
       </Pressable>
 
       <Sheet open={open} onClose={() => setOpen(false)} title={kind} description="Hold the screen steady and bright at the scanner.">
-        <View className="items-center rounded-2xl bg-white p-4">{uri ? <Image source={{ uri }} contentFit="contain" style={{ width: '100%', aspectRatio: wide ? 2 : 1 }} accessibilityIgnoresInvertColors /> : null}</View>
+        <View className="overflow-hidden rounded-xl bg-white p-4">
+          <Image source={{ uri }} contentFit="contain" style={{ width: '100%', aspectRatio: aspect, backgroundColor: '#fff' }} accessibilityIgnoresInvertColors />
+        </View>
       </Sheet>
     </View>
   );

@@ -47,7 +47,7 @@ def test_finds_a_qr_code_in_a_photo_and_crops_it_with_a_quiet_zone():
     [found] = documents.find_codes(ticket_photo(code_image()), "image/png")
     assert (found.format, found.text) == ("qr", PAYLOAD)
     crop = Image.open(io.BytesIO(found.png))
-    assert crop.width == crop.height and crop.width > 300  # square-ish, with a quiet zone around the code
+    assert crop.width == crop.height and crop.width < code_image().width  # tight: no more margin than a few pixels
     assert zxingcpp.read_barcodes(crop)[0].text == PAYLOAD  # the crop still scans
 
 
@@ -82,7 +82,9 @@ def pdf_with_image(img: Image.Image, rect=(60, 120, 260, 190)) -> bytes:
 def test_a_barcode_image_too_blurry_to_decode_is_still_shown():
     [found] = documents.find_codes(pdf_with_image(striped_barcode()), "application/pdf")
     assert found.format == "barcode" and found.text == "" and found.page == 1
-    assert Image.open(io.BytesIO(found.png)).width >= 600  # enlarged in whole steps so the bars stay sharp
+    crop = Image.open(io.BytesIO(found.png))
+    assert crop.width >= 600  # enlarged in whole steps so the bars stay sharp
+    assert crop.width < 900 and np.asarray(crop.convert("L"))[:, :6].min() > 200  # no wide white border
 
 
 def test_logos_and_photos_are_not_mistaken_for_barcodes():
