@@ -7,7 +7,7 @@
 import { deleteAsync, documentDirectory, downloadAsync, getInfoAsync, makeDirectoryAsync, readAsStringAsync, readDirectoryAsync, writeAsStringAsync } from 'expo-file-system/legacy';
 import type { Ticket, TripWithStats } from '@/types';
 import { upcomingTrips } from '@/utils/trips';
-import { getFileUrl, getPdfPages, getTickets } from './tickets';
+import { getFileUrl, getPdfPages, getTicketCode, getTickets } from './tickets';
 
 const ROOT = `${documentDirectory ?? ''}offline/`;
 const MAX_TRIPS = 3;
@@ -43,10 +43,37 @@ export async function getCachedAssets(ticket: Ticket): Promise<CachedAssets | nu
   }
 }
 
+const codeFile = (ticket: Ticket) => `${dirFor(ticket.document_id ?? '')}code-${ticket.id}.png`;
+
+/** Local copy of a ticket's QR code / barcode, or null. It must scan at a gate with no signal. */
+export async function getCachedCode(ticket: Ticket): Promise<string | null> {
+  if (!ticket.has_code || !ticket.document_id || !documentDirectory) return null;
+  const uri = codeFile(ticket);
+  return (await exists(uri)) ? uri : null;
+}
+
+/** Download a ticket's code image if it isn't cached yet. Returns true when cached. */
+export async function cacheCode(ticket: Ticket): Promise<boolean> {
+  if (!ticket.has_code || !ticket.document_id || !documentDirectory) return false;
+  if (await getCachedCode(ticket)) return true;
+  try {
+    await makeDirectoryAsync(dirFor(ticket.document_id), { intermediates: true });
+    const { url } = await getTicketCode(ticket.id);
+    await downloadAsync(url, codeFile(ticket));
+    return true;
+  } catch {
+    await deleteAsync(codeFile(ticket), { idempotent: true }).catch(() => undefined);
+    return false;
+  }
+}
+
 /** Download a ticket's files if they aren't cached yet. Safe to call repeatedly. Returns true when cached. */
 export async function cacheTicket(ticket: Ticket): Promise<boolean> {
   if (!ticket.has_file || !ticket.document_id || !documentDirectory) return false;
-  if (await getCachedAssets(ticket)) return true;
+  if (await getCachedAssets(ticket)) {
+    await cacheCode(ticket);
+    return true;
+  }
   const dir = dirFor(ticket.document_id);
   try {
     await makeDirectoryAsync(dir, { intermediates: true });
@@ -61,6 +88,7 @@ export async function cacheTicket(ticket: Ticket): Promise<boolean> {
       await downloadAsync(url, `${dir}${file}`);
       await writeAsStringAsync(`${dir}manifest.json`, JSON.stringify({ kind: 'image', file }));
     }
+    await cacheCode(ticket); // best effort: a missing code never invalidates the cached file
     return true;
   } catch {
     await deleteAsync(dir, { idempotent: true }).catch(() => undefined); // never leave a half-downloaded folder
@@ -94,6 +122,7 @@ export async function syncOfflineTrips(trips: TripWithStats[]): Promise<{ cached
         if (budget <= 0) continue;
         budget--;
         if (!(await getCachedAssets(t)) && (await cacheTicket(t))) cached++;
+        else await cacheCode(t); // files were cached before this ticket had a code
       }
     }
     return { cached, removed: await prune(keep) };

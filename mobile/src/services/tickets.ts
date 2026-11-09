@@ -14,6 +14,7 @@ export const reprocessTicket = (id: string) => apiFetch<JobOut>(`/v1/tickets/${i
 // Files: short-lived presigned URLs issued by the API after an ownership check.
 export const getFileUrl = (id: string, download = false) =>
   apiFetch<{ url: string; expires_in: number }>(`/v1/tickets/${id}/file-url${download ? '?download=true' : ''}`);
+export const getTicketCode = (id: string) => apiFetch<{ url: string; format: string; expires_in: number }>(`/v1/tickets/${id}/code`);
 export const getPdfPages = (id: string) => apiFetch<{ pages: string[]; expires_in: number }>(`/v1/tickets/${id}/pages`);
 
 // Upload (step 1 + 3): the file itself goes straight to R2 in step 2 — see uploadToR2.

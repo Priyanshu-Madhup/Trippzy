@@ -178,6 +178,8 @@ class TicketOut(_Out):
     user_id: str
     document_id: str | None = None
     has_file: bool = False
+    has_code: bool = False
+    code_format: Literal["qr", "pdf417", "aztec", "datamatrix", "code128", "barcode"] | None = None
     file_name: str | None = None
     file_type: Literal["pdf", "image"] | None = None
     mime_type: str | None = None
@@ -281,6 +283,12 @@ class UploadOut(BaseModel):
 
 class FileUrlOut(BaseModel):
     url: str
+    expires_in: int
+
+
+class CodeOut(BaseModel):
+    url: str
+    format: Literal["qr", "pdf417", "aztec", "datamatrix", "code128", "barcode"]
     expires_in: int
 
 

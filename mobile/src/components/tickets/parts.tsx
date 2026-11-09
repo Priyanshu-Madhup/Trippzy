@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils';
 import { useShadow } from '@/theme/useShadow';
 import type { Ticket } from '@/types';
+import { TicketCode } from './TicketCode';
 import type { TicketHandlers } from './types';
 
 export type { TicketHandlers };
@@ -138,6 +139,7 @@ export function TicketShell({
       <View style={card} className="z-10 overflow-hidden rounded-card border border-line bg-surface">
         {accent ? <LinearGradient colors={accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 4 }} /> : null}
         {children}
+        <TicketCode ticket={ticket} />
 
         {ticket.notes ? (
           <View className="mx-5 mb-1 mt-3 rounded-xl bg-surface-2 px-3.5 py-2.5">

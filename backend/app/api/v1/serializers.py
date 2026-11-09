@@ -6,6 +6,9 @@ def ticket_out(doc: dict) -> dict:
     out = to_api(doc) or {}
     out.pop("raw_text", None)
     out["has_file"] = bool(out.get("document_id"))
+    code = out.pop("code", None)  # storage key + payload stay server-side; the app asks for the image
+    out["has_code"] = bool(code)
+    out["code_format"] = code.get("format") if code else None
     return out
 
 

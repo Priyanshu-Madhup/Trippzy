@@ -175,6 +175,26 @@ export interface paths {
         patch: operations["patch_ticket_v1_tickets__ticket_id__patch"];
         trace?: never;
     };
+    "/v1/tickets/{ticket_id}/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ticket Code
+         * @description Signed URL for the QR code / barcode cropped from the ticket's document.
+         */
+        get: operations["ticket_code_v1_tickets__ticket_id__code_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tickets/{ticket_id}/file-url": {
         parameters: {
             query?: never;
@@ -391,6 +411,18 @@ export interface components {
             seat?: string | null;
             /** Ticket Number */
             ticket_number?: string | null;
+        };
+        /** CodeOut */
+        CodeOut: {
+            /** Expires In */
+            expires_in: number;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "qr" | "pdf417" | "aztec" | "datamatrix" | "code128" | "barcode";
+            /** Url */
+            url: string;
         };
         /** DateTimeRef */
         DateTimeRef: {
@@ -839,6 +871,8 @@ export interface components {
             booking_platform_logo_url?: string | null;
             /** Booking Reference */
             booking_reference?: string | null;
+            /** Code Format */
+            code_format?: ("qr" | "pdf417" | "aztec" | "datamatrix" | "code128" | "barcode") | null;
             /** Confidence */
             confidence?: number | null;
             /**
@@ -868,6 +902,11 @@ export interface components {
             file_size?: number | null;
             /** File Type */
             file_type?: ("pdf" | "image") | null;
+            /**
+             * Has Code
+             * @default false
+             */
+            has_code: boolean;
             /**
              * Has File
              * @default false
@@ -969,6 +1008,8 @@ export interface components {
             booking_platform_logo_url?: string | null;
             /** Booking Reference */
             booking_reference?: string | null;
+            /** Code Format */
+            code_format?: ("qr" | "pdf417" | "aztec" | "datamatrix" | "code128" | "barcode") | null;
             /** Confidence */
             confidence?: number | null;
             /**
@@ -998,6 +1039,11 @@ export interface components {
             file_size?: number | null;
             /** File Type */
             file_type?: ("pdf" | "image") | null;
+            /**
+             * Has Code
+             * @default false
+             */
+            has_code: boolean;
             /**
              * Has File
              * @default false
@@ -1723,6 +1769,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TicketOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ticket_code_v1_tickets__ticket_id__code_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeOut"];
                 };
             };
             /** @description Validation Error */

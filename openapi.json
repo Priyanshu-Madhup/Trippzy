@@ -223,6 +223,37 @@
         "title": "BusData",
         "type": "object"
       },
+      "CodeOut": {
+        "properties": {
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "format": {
+            "enum": [
+              "qr",
+              "pdf417",
+              "aztec",
+              "datamatrix",
+              "code128",
+              "barcode"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "format",
+          "expires_in"
+        ],
+        "title": "CodeOut",
+        "type": "object"
+      },
       "DateTimeRef": {
         "properties": {
           "date": {
@@ -1824,6 +1855,25 @@
             ],
             "title": "Booking Reference"
           },
+          "code_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "qr",
+                  "pdf417",
+                  "aztec",
+                  "datamatrix",
+                  "code128",
+                  "barcode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Format"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -1946,6 +1996,11 @@
               }
             ],
             "title": "File Type"
+          },
+          "has_code": {
+            "default": false,
+            "title": "Has Code",
+            "type": "boolean"
           },
           "has_file": {
             "default": false,
@@ -2374,6 +2429,25 @@
             ],
             "title": "Booking Reference"
           },
+          "code_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "qr",
+                  "pdf417",
+                  "aztec",
+                  "datamatrix",
+                  "code128",
+                  "barcode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Format"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -2496,6 +2570,11 @@
               }
             ],
             "title": "File Type"
+          },
+          "has_code": {
+            "default": false,
+            "title": "Has Code",
+            "type": "boolean"
           },
           "has_file": {
             "default": false,
@@ -4223,6 +4302,49 @@
           }
         },
         "summary": "Patch Ticket",
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/v1/tickets/{ticket_id}/code": {
+      "get": {
+        "description": "Signed URL for the QR code / barcode cropped from the ticket's document.",
+        "operationId": "ticket_code_v1_tickets__ticket_id__code_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticket_id",
+            "required": true,
+            "schema": {
+              "title": "Ticket Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ticket Code",
         "tags": [
           "tickets"
         ]

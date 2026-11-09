@@ -2,6 +2,7 @@
 
 Key layout: u/{user_id}/{trip_id}/{document_id}/original.<ext>
             u/{user_id}/{trip_id}/{document_id}/pages/{n}.webp
+            u/{user_id}/{trip_id}/{document_id}/codes/{n}.png   (scannable QR/barcode crops)
 boto3 is synchronous; calls that touch the network run in a worker thread.
 """
 
@@ -27,6 +28,10 @@ def original_key(user_id: str, trip_id: str, document_id: str, mime: str) -> str
 
 def page_key(user_id: str, trip_id: str, document_id: str, n: int) -> str:
     return f"{doc_prefix(user_id, trip_id, document_id)}pages/{n}.webp"
+
+
+def code_key(user_id: str, trip_id: str, document_id: str, n: int) -> str:
+    return f"{doc_prefix(user_id, trip_id, document_id)}codes/{n}.png"
 
 
 class Storage:

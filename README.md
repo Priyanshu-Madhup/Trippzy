@@ -40,6 +40,7 @@ app ── PUT file ───────────────────►
 app ── POST /v1/tickets/{id}/upload-complete ► API   verifies size + magic bytes, queues a job
                                        worker  reads PDF/photo → classify → extract → ground → logos/photos
                                                → ticket + trip (destination, dates, cover, places)
+                                               → QR code / barcode found in the file, cropped, stored (no AI involved)
 app ◄─ polls the ticket ─────────────  real stages: reading → identifying → extracting → building → finishing
 ```
 

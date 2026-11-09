@@ -43,7 +43,7 @@ async def _set_stage(ctx: Ctx, job: dict, stage: str) -> None:
     await ctx.tickets.update(job["user_id"], job["ticket_id"], {"processing_stage": stage})
 
 
-async def _sync_siblings(ctx: Ctx, ticket: dict, parts: list[DocumentExtraction], visuals: dict, raw_text: str) -> None:
+async def _sync_siblings(ctx: Ctx, ticket: dict, parts: list[DocumentExtraction], visuals: dict, raw_text: str, codes: list[dict | None]) -> None:
     """A round-trip document yields extra tickets (the return flight). Siblings are found by
     their shared document, so re-reading updates the existing pair instead of duplicating it."""
     user_id = ticket["user_id"]
@@ -52,6 +52,7 @@ async def _sync_siblings(ctx: Ctx, ticket: dict, parts: list[DocumentExtraction]
         row = {
             **derive_columns(part),
             **visuals,
+            "code": codes[i + 1] if i + 1 < len(codes) else None,
             "structured_data": part.model_dump(),
             "raw_text": raw_text,
             # Not "completed" yet: released only after the trip is updated (see process_job).
@@ -83,6 +84,18 @@ async def _sync_siblings(ctx: Ctx, ticket: dict, parts: list[DocumentExtraction]
         await ctx.tickets.delete(user_id, stale["_id"])
 
 
+def assign_codes(found: list, n: int) -> list[dict | None]:
+    """Which scannable code belongs to which of the document's `n` tickets (index 0 = the primary).
+    One code per journey when the counts agree; a single code is shared; otherwise only the primary
+    gets the first one rather than guessing which return leg a code belongs to."""
+    refs = [{"format": c.format, "text": c.text, "index": i} for i, c in enumerate(found)]
+    if len(refs) == n:
+        return refs
+    if len(refs) == 1:
+        return refs * n
+    return [refs[0] if refs else None] + [None] * (n - 1)
+
+
 def _blank_ticket() -> dict:
     cols = [
         "title",
@@ -95,6 +108,7 @@ def _blank_ticket() -> dict:
         "booking_platform_logo_url",
         "provider_logo_url",
         "image_url",
+        "code",
         "booking_reference",
         "origin",
         "destination",
@@ -132,6 +146,7 @@ async def process_job(ctx: Ctx, job: dict) -> None:
 
     text, images = None, None
     page_images: list[bytes] = []
+    found_codes = await asyncio.to_thread(documents.find_codes, data, mime)
     if mime == "application/pdf":
         try:
             text, _pages = await asyncio.to_thread(documents.pdf_text, data)
@@ -162,9 +177,21 @@ async def process_job(ctx: Ctx, job: dict) -> None:
     primary, extra = parts[0], parts[1:]
     raw_text = raw_text[:20_000]
 
+    # Scannable QR / barcode crops, stored beside the original; each ticket points at its own.
+    assigned = assign_codes(found_codes, len(parts))
+    for i, c in enumerate(found_codes):
+        if any(a and a["index"] == i for a in assigned):
+            await ctx.storage.put_bytes(st.code_key(user_id, ticket["trip_id"], doc["_id"], i + 1), c.png, "image/png")
+    code_refs = [
+        {"format": a["format"], "text": a["text"], "key": st.code_key(user_id, ticket["trip_id"], doc["_id"], a["index"] + 1)} if a else None for a in assigned
+    ]
+    for stale in range(len(found_codes), 6):  # a re-read that finds fewer codes must not leave old crops behind
+        await ctx.storage.delete_key(st.code_key(user_id, ticket["trip_id"], doc["_id"], stale + 1))
+
     row = {
         **derive_columns(primary),
         **visuals,
+        "code": code_refs[0],
         "structured_data": primary.model_dump(),
         "raw_text": raw_text,
         "processing_status": "processing",
@@ -174,7 +201,7 @@ async def process_job(ctx: Ctx, job: dict) -> None:
     }
     keep = set(ticket.get("user_edits") or [])  # the user's edits win over a re-read
     await ctx.tickets.update(user_id, ticket_id, {k: v for k, v in row.items() if k not in keep})
-    await _sync_siblings(ctx, ticket, extra, visuals, raw_text)
+    await _sync_siblings(ctx, ticket, extra, visuals, raw_text, code_refs)
 
     # PDF page images for the in-app viewer (and offline cache), stored next to the original.
     if page_images:

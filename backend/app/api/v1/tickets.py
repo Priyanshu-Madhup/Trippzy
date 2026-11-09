@@ -8,7 +8,7 @@ from app.core.errors import AppError, not_found
 from app.core.ratelimit import user_limit
 from app.db import now
 from app.repositories.base import to_api
-from app.schemas.api import DocumentRow, FileUrlOut, JobOut, PagesOut, TicketOut, TicketPatch, TicketWithTrip
+from app.schemas.api import CodeOut, DocumentRow, FileUrlOut, JobOut, PagesOut, TicketOut, TicketPatch, TicketWithTrip
 from app.services.trip_intel import update_trip_from_tickets
 
 router = APIRouter(prefix="/v1", tags=["tickets"], dependencies=[IpGuard])
@@ -160,3 +160,13 @@ async def pdf_pages(ticket_id: str, user: AuthedUser = UserDep, ctx: Ctx = CtxDe
     doc = await _document_for(ctx, user, ticket_id)
     ttl = ctx.settings.download_url_ttl_s
     return {"pages": [ctx.storage.presign_get(k, ttl) for k in doc.get("page_keys") or []], "expires_in": ttl}
+
+
+@router.get("/tickets/{ticket_id}/code", response_model=CodeOut)
+async def ticket_code(ticket_id: str, user: AuthedUser = UserDep, ctx: Ctx = CtxDep):
+    """Signed URL for the QR code / barcode cropped from the ticket's document."""
+    code = (await _owned(ctx, user, ticket_id)).get("code")
+    if not code:
+        raise not_found("Code")
+    ttl = ctx.settings.download_url_ttl_s
+    return {"url": ctx.storage.presign_get(code["key"], ttl), "format": code["format"], "expires_in": ttl}
