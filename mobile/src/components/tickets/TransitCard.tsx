@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { ProviderLogo } from '@/components/common/ProviderLogo';
 import { Icon } from '@/components/ui/Icon';
 import { Text } from '@/components/ui/Text';
-import { cn } from '@/lib/utils';
+import { cn, hashHue } from '@/lib/utils';
 import type { BusData, Ticket, TrainData } from '@/types';
 import { durationLabel, formatPass, formatWeekday } from '@/utils/date';
 import { detailsOf, TYPE_META } from '@/utils/ticket';
@@ -25,8 +25,11 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
   const duration = durationLabel(depDate, depTime, arrDate, arrTime);
   const overnight = !!depDate && !!arrDate && arrDate > depDate;
 
+  const hue = hashHue(operator ?? service ?? kind);
+  const accent: [string, string] = [`hsl(${hue}, 55%, 45%)`, `hsl(${(hue + 40) % 360}, 65%, 60%)`];
+
   return (
-    <TicketShell ticket={ticket} handlers={handlers}>
+    <TicketShell ticket={ticket} handlers={handlers} accent={accent}>
       <View className="flex-row items-start justify-between gap-3 px-5 pt-5">
         <View className="min-w-0 flex-1 flex-row items-center gap-3">
           {ticket.provider_logo_url ? (

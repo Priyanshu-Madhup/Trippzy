@@ -8,6 +8,7 @@ import { getTicketCode } from '@/services/tickets';
 import type { Ticket } from '@/types';
 
 const LABEL: Record<string, string> = { qr: 'QR code', pdf417: 'Barcode', aztec: 'Barcode', datamatrix: 'Barcode', code128: 'Barcode', barcode: 'Barcode' };
+const RATIOS = new Map<string, number>();
 const SQUARE_MAX = 168; // a QR code is shown at a scannable, card-friendly size rather than stretched
 
 /**
@@ -17,7 +18,13 @@ const SQUARE_MAX = 168; // a QR code is shown at a scannable, card-friendly size
  */
 export function TicketCode({ ticket }: { ticket: Ticket }) {
   const [open, setOpen] = useState(false);
-  const [ratio, setRatio] = useState<number | null>(null); // width / height, read from the image itself
+  // width / height, read from the image itself. Remembered across collapse/expand (the card remounts), so the
+  // code never flashes as a white square while it re-measures.
+  const [ratio, setRatioState] = useState<number | null>(RATIOS.get(ticket.id) ?? null);
+  const setRatio = (r: number) => {
+    RATIOS.set(ticket.id, r);
+    setRatioState(r);
+  };
   const { data: uri } = useQuery({
     queryKey: ['ticket-code', ticket.id, ticket.updated_at],
     enabled: ticket.has_code,
@@ -29,6 +36,8 @@ export function TicketCode({ ticket }: { ticket: Ticket }) {
   const kind = LABEL[ticket.code_format ?? 'qr'] ?? 'Code';
   const aspect = ratio ?? 1;
   const squareish = aspect > 0.8 && aspect < 1.25;
+  // Until the real shape is known, keep it invisible and flat so no white box shows.
+  const measuring = ratio === null;
 
   return (
     <View className="mt-4 px-5">
@@ -37,13 +46,13 @@ export function TicketCode({ ticket }: { ticket: Ticket }) {
         accessibilityRole="imagebutton"
         accessibilityLabel={`${kind} for ${ticket.title ?? 'this ticket'}. Tap to enlarge.`}
         className="self-center overflow-hidden rounded-lg"
-        style={squareish ? { width: SQUARE_MAX } : { width: '100%' }}
+        style={[squareish ? { width: SQUARE_MAX } : { width: '100%' }, measuring ? { height: 1, opacity: 0 } : null]}
       >
         <Image
           source={{ uri }}
           contentFit="fill"
           onLoad={(e) => e.source.width && e.source.height && setRatio(e.source.width / e.source.height)}
-          style={{ width: '100%', aspectRatio: aspect, backgroundColor: '#fff' }}
+          style={{ width: '100%', aspectRatio: aspect }}
           accessibilityIgnoresInvertColors
         />
       </Pressable>
