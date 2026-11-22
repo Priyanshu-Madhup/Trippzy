@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { FileWarning } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { Icon } from '@/components/ui/Icon';
 import { Sheet } from '@/components/ui/Sheet';
+import { Text } from '@/components/ui/Text';
 import { getCachedCode } from '@/services/offline';
 import { getTicketCode } from '@/services/tickets';
 import type { Ticket } from '@/types';
@@ -32,6 +35,15 @@ export function TicketCode({ ticket }: { ticket: Ticket }) {
     staleTime: 5 * 60_000,
     queryFn: async () => (await getCachedCode(ticket)) ?? (await getTicketCode(ticket.id)).url,
   });
+  // A photo or screenshot of a boarding-type ticket with no readable code: say so, and what to do about it.
+  if (!ticket.has_code && ticket.file_type === 'image' && ['flight', 'train', 'bus'].includes(ticket.document_type)) {
+    return (
+      <View className="mx-5 mt-4 flex-row items-start gap-2.5 rounded-xl bg-surface-2 px-3.5 py-3">
+        <Icon as={FileWarning} size={16} className="mt-0.5 text-muted" />
+        <Text className="flex-1 text-[13px] leading-[19px] text-ink-2">The QR code or barcode in this picture is too blurry to extract. Upload the original PDF to get it on this card.</Text>
+      </View>
+    );
+  }
   if (!ticket.has_code || !uri) return null;
   const kind = LABEL[ticket.code_format ?? 'qr'] ?? 'Code';
   const aspect = ratio ?? 1;

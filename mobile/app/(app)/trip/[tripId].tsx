@@ -154,7 +154,12 @@ export default function TripDetail() {
     onMenu: (ticket, anchor) => setMenu({ ticket, anchor }),
     onEdit: setEditing,
     onCalendar: (t) => void addToCalendar(t),
-    onRetry: (t) => retry.mutate(t, { onError: (e) => toast.error(e instanceof Error ? e.message : 'Could not retry.') }),
+    onRetry: (t) => {
+      retry.mutate(t, { onError: (e) => toast.error(e instanceof Error ? e.message : 'Could not retry.') });
+      // Close the popup and bring the waiting queue into view, so the re-read is visibly in progress.
+      closePopup();
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, offsets.current.content - 8), animated: true }), 120);
+    },
     onDelete: setConfirmTicket,
   };
 
