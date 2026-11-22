@@ -272,6 +272,7 @@ def _transit_endpoint(v: Any) -> Raw:
         "city": s(r.get("city"), 80),
         "date": norm_date(r.get("date")),
         "time": norm_time(r.get("time")),
+        "platform": s(r.get("platform"), 20),
     }
 
 

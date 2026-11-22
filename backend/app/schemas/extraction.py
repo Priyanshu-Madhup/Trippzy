@@ -21,6 +21,21 @@ DOCUMENT_TYPES = (
 )
 DocumentType = Literal["flight", "hotel", "train", "bus", "restaurant", "activity", "generic_travel_document", "unknown"]
 
+# What the paper actually is, finer than `document_type` (a flight can be a boarding pass or an e-ticket). Shown as a small label on the card.
+TICKET_KINDS = (
+    "flight_ticket",
+    "boarding_pass",
+    "train_ticket",
+    "bus_ticket",
+    "hotel_booking",
+    "restaurant_reservation",
+    "activity_ticket",
+    "travel_document",
+)
+TicketKind = Literal[
+    "flight_ticket", "boarding_pass", "train_ticket", "bus_ticket", "hotel_booking", "restaurant_reservation", "activity_ticket", "travel_document"
+]
+
 
 class _M(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -109,6 +124,7 @@ class TransitEndpoint(_M):
     city: str | None = None
     date: str | None = None
     time: str | None = None
+    platform: str | None = None
 
 
 class TrainData(_M):
@@ -204,3 +220,4 @@ class DocumentExtraction(_M):
     ungrounded_fields: list[str] = []
     reminder: Reminder = Field(default_factory=Reminder)
     leg: Literal["outbound", "return"] | None = None
+    ticket_kind: TicketKind | None = None

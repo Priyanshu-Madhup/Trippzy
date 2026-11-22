@@ -23,7 +23,12 @@ const TIMEOUT_MS = 30_000;
 
 /** Calls the Trippzy API with the user's Clerk session token (same contract as Trippy's apiFetch). */
 export async function apiFetch<T>(path: string, init: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
-  const token = await getToken();
+  let token: string | null = null;
+  try {
+    token = await getToken();
+  } catch {
+    throw new ApiError(0, 'network', 'You appear to be offline.'); // Clerk can't refresh the session without a connection
+  }
   const headers = new Headers(init.headers);
   if (token) headers.set('authorization', `Bearer ${token}`);
   if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');

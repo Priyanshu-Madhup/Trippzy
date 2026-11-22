@@ -42,6 +42,7 @@ _transit_endpoint = obj(
         "city": _str,
         "date": _date,
         "time": _time,
+        "platform": {"type": ["string", "null"], "description": "Platform number, only if printed on the ticket"},
     }
 )
 

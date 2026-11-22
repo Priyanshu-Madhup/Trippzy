@@ -21,6 +21,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SetupRequired } from '@/components/common/SetupRequired';
 import { env, isConfigured, shareEnabled } from '@/lib/env';
 import { CACHE_OWNER_KEY, PERSIST_MAX_AGE, persistedRoots, queryClient, queryPersister } from '@/lib/queryClient';
+import { apiReachable } from '@/lib/network';
 import { setTokenGetter } from '@/services/api';
 import { clearOffline } from '@/services/offline';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -48,7 +49,8 @@ function AuthBridge() {
       if (userId) {
         if (owner && owner !== userId) await wipe();
         await AsyncStorage.setItem(CACHE_OWNER_KEY, userId);
-      } else if (owner) {
+      } else if (owner && (await apiReachable())) {
+        // Signed out for real (the server answered). With no signal Clerk can look signed out: keep the saved tickets then.
         await wipe();
         await AsyncStorage.removeItem(CACHE_OWNER_KEY);
       }

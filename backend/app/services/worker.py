@@ -7,6 +7,7 @@ import uuid
 
 from app.ai import documents
 from app.ai.client import Budget, Usage
+from app.ai.jev import classify_kind
 from app.ai.pipeline import run_extraction
 from app.context import Ctx
 from app.core.errors import AppError
@@ -170,6 +171,9 @@ async def process_job(ctx: Ctx, job: dict) -> None:
         budget=budget,
         on_stage=on_stage,
     )
+
+    kind = await classify_kind(ctx.ai, extraction, raw_text, ticket.get("file_name") or "document", usage, budget)
+    extraction = extraction.model_copy(update={"ticket_kind": kind})
 
     await _set_stage(ctx, job, "building")
     visuals = await resolve_ticket_visuals(ctx.settings, extraction)

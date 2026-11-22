@@ -1,5 +1,7 @@
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { Text } from '@/components/ui/Text';
 import type { Ticket } from '@/types';
+import { kindLabel } from '@/utils/ticket';
 import { CompactTicket } from './CompactTicket';
 import { TicketCard } from './TicketCard';
 import type { TicketHandlers } from './types';
@@ -34,6 +36,11 @@ export function CollapsibleTicket({
       exiting={FadeOut.duration(180)}
       onLayout={(e) => onLayoutY?.(ticket.id, e.nativeEvent.layout.y)}
     >
+      {collapsible ? (
+        <Text accessibilityRole="header" className="mb-1.5 ml-1.5 font-geist-semibold text-[11px] uppercase tracking-[1.2px] text-faint">
+          {kindLabel(ticket)}
+        </Text>
+      ) : null}
       {collapsible ? (
         expanded ? (
           <TicketCard ticket={ticket} handlers={{ ...handlers, onCollapse: () => onToggle(ticket.id, false) }} />

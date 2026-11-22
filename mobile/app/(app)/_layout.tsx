@@ -1,4 +1,3 @@
-import { useAuth } from '@clerk/expo';
 import { Redirect, Stack, usePathname, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { UpdateGate } from '@/components/common/UpdateGate';
@@ -6,6 +5,7 @@ import { ShareWatcher } from '@/features/share/ShareWatcher';
 import { shareEnabled } from '@/lib/env';
 import { UIContext, type UIContextValue } from '@/hooks/useUI';
 import { useProfile } from '@/hooks/useProfile';
+import { useSession } from '@/hooks/useSession';
 import { UploadProvider } from '@/hooks/useUpload';
 import { needsTerms } from '@/services/terms';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -13,7 +13,7 @@ import { hex } from '@/theme/tokens';
 
 /** Authenticated app chrome: the upload queue and global actions. Signed-out users are sent to /welcome. */
 export default function AppLayout() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { ready, signedIn } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const { data: profile } = useProfile();
@@ -31,8 +31,8 @@ export default function AppLayout() {
     [router],
   );
 
-  if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/welcome" />;
+  if (!ready) return null;
+  if (!signedIn) return <Redirect href="/welcome" />;
   // Everyone must have accepted the current Terms & Privacy Policy before using the app (checked right after sign-up).
   if (needsTerms(profile) && pathname !== '/terms') return <Redirect href="/terms" />;
 

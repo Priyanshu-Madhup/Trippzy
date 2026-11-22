@@ -66,7 +66,7 @@ export default function Home() {
         </Text>
       </View>
 
-      {error ? (
+      {error && !trips ? (
         <View className="items-center rounded-card border border-line bg-surface p-8">
           <Text className="font-geist-semibold">We couldn’t load your trips.</Text>
           <Text className="mt-1 text-center text-sm text-muted">{error instanceof Error ? error.message : 'Please try again.'}</Text>

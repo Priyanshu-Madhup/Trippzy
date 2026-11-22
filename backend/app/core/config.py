@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # returned an empty answer. Extraction is copy-and-normalise, so reasoning is off (faster, ~4x cheaper).
     openrouter_reasoning: bool = False
 
+    # TypeSafe's Jev, through OpenRouter (same key as above): a small decision model that labels what a document is
+    # (boarding pass, rail ticket…). Empty = skip it and use the keyword rules.
+    jev_model: str = "typesafe/jev-router"
+
     # Replaces the built-in "photo editor" prompt that decides what to photograph for a trip's cover (see prompts.COVER_IMAGE_SYSTEM).
     cover_image_prompt: str = ""
     # TomTom (routing with live + predicted traffic, place search) for the "Trippzy Note" on Home.

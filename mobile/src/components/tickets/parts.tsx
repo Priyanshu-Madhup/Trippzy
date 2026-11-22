@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowRight, CalendarPlus, ChevronUp, Copy, Ellipsis, Info, Pencil, type LucideIcon } from 'lucide-react-native';
+import { ArrowRight, CalendarPlus, ChevronUp, Copy, Ellipsis, Info, Luggage, Pencil, type LucideIcon } from 'lucide-react-native';
 import { useRef, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -40,6 +40,28 @@ export function Detail({
           {value}
         </Text>
         {copy ? <CopyButton value={copy} label={label} /> : null}
+      </View>
+    </View>
+  );
+}
+
+/** Baggage allowance as readable chips ("Cabin 7 kg" · "Check-in 15 kg") on their own full-width row. */
+export function BaggageRow({ value, className = 'w-full' }: { value: string | null | undefined; className?: string }) {
+  const parts = (value ?? '')
+    .split(/\s*(?:[·•;|\n]|,\s(?=[A-Za-z]))\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <View className={cn('min-w-0 pr-3', className)}>
+      <Text className="text-[11px] font-geist-medium uppercase tracking-[1.1px] text-faint">Baggage</Text>
+      <View className="mt-1.5 flex-row flex-wrap gap-2">
+        {parts.map((p, i) => (
+          <View key={i} className="flex-row items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5">
+            <Icon as={Luggage} size={14} className="text-ink-2" />
+            <Text className="font-geist-medium text-[13px]">{p}</Text>
+          </View>
+        ))}
       </View>
     </View>
   );

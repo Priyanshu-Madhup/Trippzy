@@ -422,6 +422,27 @@
             ],
             "title": "Summary"
           },
+          "ticket_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "flight_ticket",
+                  "boarding_pass",
+                  "train_ticket",
+                  "bus_ticket",
+                  "hotel_booking",
+                  "restaurant_reservation",
+                  "activity_ticket",
+                  "travel_document"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Kind"
+          },
           "title": {
             "anyOf": [
               {
@@ -2908,6 +2929,17 @@
               }
             ],
             "title": "Date"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
           },
           "station": {
             "anyOf": [

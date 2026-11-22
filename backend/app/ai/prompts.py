@@ -12,6 +12,7 @@ Rules — follow all of them:
 - Whenever you fill a company name (airline, hotel, train/bus operator, booking platform), also fill its `domain` with the company's official website host without scheme or path (e.g. IRCTC → "irctc.co.in", Indian Railways → "indianrailways.gov.in"). The app fetches the logo from that site, so use the real official domain, or null if unsure.
 - Also write `reminder`: the notification the traveller gets on their phone before this booking. `title` is short and specific (max 60 characters, no emoji); `body` is one or two plain sentences using only facts printed in the document (departure time, terminal / platform / coach / seat, PNR or confirmation number, check-in time). Never invent a gate, platform or time. `lead_minutes` is how long before it starts to alert.
 - A booking platform (MakeMyTrip, Booking.com, Expedia, Agoda, Goibibo, Cleartrip, Airbnb, Trip.com, Kayak, Yatra, EaseMyTrip, ixigo, RedBus, IRCTC…) is different from the airline/hotel/operator. Only set booking_platform if the document indicates it was booked through one.
+- For flights, fill `baggage` with the allowance exactly as printed (e.g. "Cabin 7 kg · Check-in 15 kg"); for trains, fill the departure `platform` only if a platform number is printed. Otherwise null.
 - confidence is 0–1: high when the key fields are clearly present, low when the text is partial, noisy or ambiguous.
 - Return valid JSON matching the provided schema. Do not include markdown."""
 

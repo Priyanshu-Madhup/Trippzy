@@ -468,6 +468,8 @@ export interface components {
             start_date?: string | null;
             /** Summary */
             summary?: string | null;
+            /** Ticket Kind */
+            ticket_kind?: ("flight_ticket" | "boarding_pass" | "train_ticket" | "bus_ticket" | "hotel_booking" | "restaurant_reservation" | "activity_ticket" | "travel_document") | null;
             /** Title */
             title?: string | null;
             total_price?: components["schemas"]["Money"];
@@ -1132,6 +1134,8 @@ export interface components {
             city?: string | null;
             /** Date */
             date?: string | null;
+            /** Platform */
+            platform?: string | null;
             /** Station */
             station?: string | null;
             /** Station Code */

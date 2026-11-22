@@ -8,6 +8,9 @@ import { durationLabel, formatPass, formatWeekday } from '@/utils/date';
 import { detailsOf, TYPE_META } from '@/utils/ticket';
 import { Detail, Perforation, PlatformBadge, ReviewNotice, TicketShell, type TicketHandlers } from './parts';
 
+const stationLine = (e?: { station?: string | null; station_code?: string | null } | null) =>
+  e?.station ? (e.station_code && !e.station.includes(e.station_code) ? `${e.station} (${e.station_code})` : e.station) : null;
+
 /** Shared layout for ground transport (same-time-zone, so local times can be subtracted safely). */
 function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handlers: TicketHandlers; kind: 'train' | 'bus'; data: TrainData | BusData | null }) {
   const meta = TYPE_META[kind];
@@ -63,9 +66,15 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
           </Text>
           {depTime ? <Text className="mt-2 font-geist-mono-semibold text-lg">{depTime}</Text> : null}
         </View>
-        <View className="items-center pt-1.5">
-          <View className="size-8 items-center justify-center rounded-full bg-surface-2">
-            <Icon as={meta.icon} size={16} className="text-ink" />
+        <View className="w-[26%] items-center pt-1.5">
+          <View className="w-full flex-row items-center gap-1.5">
+            <View className="size-1.5 rounded-full border border-faint" />
+            <View className="h-px flex-1 border-t border-dashed border-faint" />
+            <View className="size-8 items-center justify-center rounded-full bg-surface-2">
+              <Icon as={meta.icon} size={16} className="text-ink" />
+            </View>
+            <View className="h-px flex-1 border-t border-dashed border-faint" />
+            <View className="size-1.5 rounded-full bg-faint" />
           </View>
           {duration ? <Text className="mt-1.5 font-geist-medium text-[11px] text-muted">{duration}</Text> : null}
         </View>
@@ -92,17 +101,26 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
 
       <Perforation className="mt-4" />
 
-      <View className="flex-row flex-wrap gap-y-4 px-5 pb-1 pt-1">
+      <View className="flex-row flex-wrap gap-y-4 px-5 pb-2 pt-1">
         <Detail label={kind === 'train' ? 'PNR' : 'Ticket'} value={ticket.booking_reference} mono copy={ticket.booking_reference} className="w-2/3" />
         <Detail label="Seat" value={data?.seat} mono className="w-1/3" />
         {train ? (
           <>
+            <Detail label="Platform" value={train.departure?.platform} mono className="w-1/3" />
             <Detail label="Coach" value={train.coach} mono className="w-1/3" />
-            <Detail label="Berth" value={train.berth} className="w-2/3" />
-            <Detail label="Class" value={train.travel_class} className="w-full" />
+            <Detail label="Berth" value={train.berth} className="w-1/3" />
+            <Detail label="Class" value={train.travel_class} className="w-2/3" />
+            <Detail label="Train no." value={train.train_number} mono className="w-1/3" />
+            <Detail label="Boarding station" value={stationLine(train.departure)} className="w-full" />
           </>
         ) : null}
-        {bus ? <Detail label="Boarding" value={bus.departure?.station} className="w-full" /> : null}
+        {bus ? (
+          <>
+            <Detail label="Boarding point" value={bus.departure?.station} className="w-full" />
+            <Detail label="Dropping point" value={bus.arrival?.station} className="w-full" />
+          </>
+        ) : null}
+        <Detail label={(data?.passengers?.length ?? 0) > 1 ? 'Passengers' : 'Passenger'} value={data?.passengers?.join(', ')} className="w-full" />
       </View>
     </TicketShell>
   );

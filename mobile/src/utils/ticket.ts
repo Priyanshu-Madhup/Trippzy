@@ -22,6 +22,30 @@ export const TYPE_META: Record<DocumentType, TypeMeta> = {
   unknown: { label: 'Document', icon: FileText, tile: 'bg-stone-500/10', text: 'text-stone-700 dark:text-stone-300' },
 };
 
+/** The small tag shown above a ticket: what the paper is. Jev decides it on upload; older tickets fall back to their category. */
+const KIND_LABELS: Record<string, string> = {
+  flight_ticket: 'Flight ticket',
+  boarding_pass: 'Boarding pass',
+  train_ticket: 'Rail ticket',
+  bus_ticket: 'Bus ticket',
+  hotel_booking: 'Hotel booking',
+  restaurant_reservation: 'Table reservation',
+  activity_ticket: 'Activity ticket',
+  travel_document: 'Travel document',
+};
+const TYPE_KIND_LABELS: Partial<Record<DocumentType, string>> = {
+  flight: 'Flight ticket',
+  train: 'Rail ticket',
+  bus: 'Bus ticket',
+  hotel: 'Hotel booking',
+  restaurant: 'Table reservation',
+  activity: 'Activity ticket',
+};
+export function kindLabel(ticket: Ticket): string {
+  const kind = ticket.structured_data?.ticket_kind;
+  return (kind && KIND_LABELS[kind]) || TYPE_KIND_LABELS[ticket.document_type] || 'Travel document';
+}
+
 export type FilterKey = 'all' | 'flight' | 'hotel' | 'train' | 'bus' | 'activity' | 'document';
 
 export const FILTERS: { key: FilterKey; label: string }[] = [
