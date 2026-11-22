@@ -19,3 +19,25 @@ async def test_wiki_hotel_picks_matching_page(monkeypatch):
     monkeypatch.setattr(r, "_get_json", fake)
     out = await r._wiki_hotel(None, "The Taj Mahal Palace", "Mumbai")
     assert out and out["url"] == "https://x/2.jpg"
+
+
+async def test_logo_search_accepts_name_variants_and_the_booking_domain():
+    class Resp:
+        def __init__(self, status=200, body=None, content=b"", ctype="application/json"):
+            self.status_code, self._b, self.content, self.headers = status, body, content, {"content-type": ctype}
+
+        def json(self):
+            return self._b
+
+    class Http:
+        async def get(self, url, **kw):
+            if "search" in url:
+                q = kw["params"]["q"]
+                # "Yatra.com" finds nothing by name; the bare "Yatra" finds the brand
+                return Resp(body=[] if q == "Yatra.com" else [{"name": "Yatra", "domain": "yatra.com", "logo_url": "https://img.logo.dev/yatra.com?token=t"}])
+            return Resp(content=b"x" * 10, ctype="image/png")
+
+    s = r.Settings(logo_dev_token="t")
+    r._min_side = lambda b: 128  # the stub image has no real pixels
+    assert r._name_forms("Yatra.com") == ["Yatra.com", "Yatra"]
+    assert (await r._logo_by_name(Http(), s, "Yatra.com", "yatra.com")).startswith("https://img.logo.dev/yatra.com")

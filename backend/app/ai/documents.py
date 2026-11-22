@@ -148,6 +148,27 @@ def _scan(img: Image.Image, page: int, zoom: float = 1.0) -> list[FoundCode]:
     return out
 
 
+def _scan_image(img: Image.Image) -> list[FoundCode]:
+    """A photo or screenshot of a ticket: try the picture as it is, then the variants a decoder needs when the code is
+    small, soft, huge or low-contrast. The first pass that finds a code wins."""
+    w, h = img.size
+    variants: list[Image.Image] = [img]
+    if max(w, h) > 2200:
+        k = 2000 / max(w, h)
+        variants.append(img.resize((int(w * k), int(h * k)), Image.LANCZOS))
+    if max(w, h) < 1600:
+        variants.append(img.resize((w * 2, h * 2), Image.LANCZOS))
+    gray = ImageOps.autocontrast(img.convert("L"), cutoff=2).convert("RGB")
+    variants.append(gray)
+    if max(w, h) < 1600:
+        variants.append(gray.resize((w * 2, h * 2), Image.LANCZOS))
+    for v in variants:
+        zoom = v.width / w
+        if found := _scan(v, 1, zoom):
+            return found
+    return []
+
+
 def _looks_like_barcode(img: Image.Image) -> bool:
     """Structure test for a barcode raster too small/aliased to decode: pure black-and-white, no colour,
     many bar transitions along a row (or a column, when rotated), and a barcode-like share of ink.
@@ -221,7 +242,7 @@ def find_codes(data: bytes, mime: str, max_pages: int = 8) -> list[FoundCode]:
             finally:
                 doc.close()
         else:
-            found = _scan(ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB"), 1)
+            found = _scan_image(ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB"))
     except Exception:
         return []
     seen: set[str] = set()

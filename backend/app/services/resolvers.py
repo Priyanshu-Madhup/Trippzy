@@ -395,23 +395,40 @@ def _norm(x: str) -> str:
     return re.sub(r"[^a-z0-9]", "", x.lower())
 
 
-async def _logo_by_name(http: httpx.AsyncClient, s: Settings, name: str) -> str | None:
+def _name_forms(name: str) -> list[str]:
+    """The ways a brand is written: "Yatra.com" and "Yatra" are the same company."""
+    bare = re.sub(r"\.(com|in|co\.in|co|net|org)(\b.*)?$", "", name.strip(), flags=re.I).strip()
+    return [n for n in dict.fromkeys([name.strip(), bare]) if n]
+
+
+async def _logo_by_name(http: httpx.AsyncClient, s: Settings, name: str, domain: str | None = None) -> str | None:
     """logo.dev brand search by company name. Several entries can share a name (e.g. a stale and a current
-    domain), so probe each exact-name match and keep the most detailed image."""
+    domain), so probe each match, by name or by the booking's own domain, and keep the most detailed image."""
     if not (s.logo_dev_token and name):
         return None
+    forms = _name_forms(name)
+    wanted = {_norm(f) for f in forms}
     try:
-        r = await http.get("https://api.logo.dev/search", params={"q": name}, headers={"Authorization": f"Bearer {s.logo_dev_token}"}, timeout=6)
-        if r.status_code != 200:
-            return None
-        matches = [x for x in r.json()[:8] if _norm(x.get("name", "")) == _norm(name) and str(x.get("logo_url", "")).startswith("https://img.logo.dev/")]
         best: tuple[str, int] | None = None
-        for x in matches[:3]:
-            url = f"{x['logo_url']}&size=128&format=png&fallback=404"
-            img = await http.get(url, timeout=6)
-            if img.status_code == 200 and img.headers.get("content-type", "").startswith("image/") and _min_side(img.content) >= 64:
-                if best is None or len(img.content) > best[1]:
-                    best = (url, len(img.content))
+        seen: set[str] = set()
+        for q in forms:
+            r = await http.get("https://api.logo.dev/search", params={"q": q}, headers={"Authorization": f"Bearer {s.logo_dev_token}"}, timeout=6)
+            if r.status_code != 200:
+                continue
+            for x in r.json()[:8]:
+                same_domain = bool(domain) and str(x.get("domain", "")).lower().removeprefix("www.") == domain
+                if not (_norm(x.get("name", "")) in wanted or same_domain) or not str(x.get("logo_url", "")).startswith("https://img.logo.dev/"):
+                    continue
+                if x["logo_url"] in seen:
+                    continue
+                seen.add(x["logo_url"])
+                url = f"{x['logo_url']}&size=128&format=png&fallback=404"
+                img = await http.get(url, timeout=6)
+                if img.status_code == 200 and img.headers.get("content-type", "").startswith("image/") and _min_side(img.content) >= 64:
+                    if best is None or len(img.content) > best[1]:
+                        best = (url, len(img.content))
+                if len(seen) >= 4:
+                    break
         return best[0] if best else None
     except Exception:
         return None
@@ -422,7 +439,7 @@ async def _by_domain(http, s: Settings, domain: str | None, name: str | None = N
     we found. 4) Favicon services."""
     # A curated brand logo beats a site icon: government/corporate sites often declare a crest or emblem as their
     # icon (indianrailways.gov.in publishes the national emblem), which isn't the brand's logo.
-    if name and (url := await _logo_by_name(http, s, name)):
+    if name and (url := await _logo_by_name(http, s, name, domain)):
         return {"url": url, "source": "logo.dev"}
     site = await _from_official_site(http, domain) if domain else None
     if site:
