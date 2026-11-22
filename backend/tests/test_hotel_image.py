@@ -41,3 +41,28 @@ async def test_logo_search_accepts_name_variants_and_the_booking_domain():
     r._min_side = lambda b: 128  # the stub image has no real pixels
     assert r._name_forms("Yatra.com") == ["Yatra.com", "Yatra"]
     assert (await r._logo_by_name(Http(), s, "Yatra.com", "yatra.com")).startswith("https://img.logo.dev/yatra.com")
+
+
+async def test_logo_search_retries_with_travel_when_the_plain_name_finds_nothing():
+    queries = []
+
+    class Resp:
+        def __init__(self, body=None, content=b"", ctype="application/json"):
+            self.status_code, self._b, self.content, self.headers = 200, body, content, {"content-type": ctype}
+
+        def json(self):
+            return self._b
+
+    class Http:
+        async def get(self, url, **kw):
+            if "search" in url:
+                q = kw["params"]["q"]
+                queries.append(q)
+                return Resp(
+                    body=[{"name": "Ixigo", "domain": "ixigo.com", "logo_url": "https://img.logo.dev/ixigo.com?token=t"}] if q.endswith("travel") else []
+                )
+            return Resp(content=b"x" * 10, ctype="image/png")
+
+    r._min_side = lambda b: 128
+    out = await r._logo_by_name(Http(), r.Settings(logo_dev_token="t"), "Ixigo")
+    assert queries == ["Ixigo", "Ixigo travel"] and out.startswith("https://img.logo.dev/ixigo.com")

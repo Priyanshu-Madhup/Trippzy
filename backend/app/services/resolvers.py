@@ -408,27 +408,36 @@ async def _logo_by_name(http: httpx.AsyncClient, s: Settings, name: str, domain:
         return None
     forms = _name_forms(name)
     wanted = {_norm(f) for f in forms}
+    seen: set[str] = set()
+
+    async def search(q: str) -> tuple[str, int] | None:
+        """Probe every accepted match for one query; keep the most detailed image."""
+        r = await http.get("https://api.logo.dev/search", params={"q": q}, headers={"Authorization": f"Bearer {s.logo_dev_token}"}, timeout=6)
+        if r.status_code != 200:
+            return None
+        best: tuple[str, int] | None = None
+        for x in r.json()[:8]:
+            same_domain = bool(domain) and str(x.get("domain", "")).lower().removeprefix("www.") == domain
+            if not (_norm(x.get("name", "")) in wanted or same_domain) or not str(x.get("logo_url", "")).startswith("https://img.logo.dev/"):
+                continue
+            if x["logo_url"] in seen or len(seen) >= 4:
+                continue
+            seen.add(x["logo_url"])
+            url = f"{x['logo_url']}&size=128&format=png&fallback=404"
+            img = await http.get(url, timeout=6)
+            if img.status_code == 200 and img.headers.get("content-type", "").startswith("image/") and _min_side(img.content) >= 64:
+                if best is None or len(img.content) > best[1]:
+                    best = (url, len(img.content))
+        return best
+
     try:
         best: tuple[str, int] | None = None
-        seen: set[str] = set()
         for q in forms:
-            r = await http.get("https://api.logo.dev/search", params={"q": q}, headers={"Authorization": f"Bearer {s.logo_dev_token}"}, timeout=6)
-            if r.status_code != 200:
-                continue
-            for x in r.json()[:8]:
-                same_domain = bool(domain) and str(x.get("domain", "")).lower().removeprefix("www.") == domain
-                if not (_norm(x.get("name", "")) in wanted or same_domain) or not str(x.get("logo_url", "")).startswith("https://img.logo.dev/"):
-                    continue
-                if x["logo_url"] in seen:
-                    continue
-                seen.add(x["logo_url"])
-                url = f"{x['logo_url']}&size=128&format=png&fallback=404"
-                img = await http.get(url, timeout=6)
-                if img.status_code == 200 and img.headers.get("content-type", "").startswith("image/") and _min_side(img.content) >= 64:
-                    if best is None or len(img.content) > best[1]:
-                        best = (url, len(img.content))
-                if len(seen) >= 4:
-                    break
+            if (hit := await search(q)) and (best is None or hit[1] > best[1]):
+                best = hit
+        if best is None:
+            # A bare name can drown in unrelated brands: "<name> travel" steers the search to the travel company.
+            best = await search(f"{forms[-1]} travel")
         return best[0] if best else None
     except Exception:
         return None
