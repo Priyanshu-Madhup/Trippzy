@@ -471,6 +471,19 @@ KNOWN_PLATFORMS = {
 }
 
 
+# Logos we host ourselves (docs/logos, served at trippzy.app/logos/): the brand's real mark, always sharp, no lookup needed.
+CURATED_LOGOS = {
+    "yatra": "https://trippzy.app/logos/yatra.png",
+    "makemytrip": "https://trippzy.app/logos/makemytrip.png",
+    "mmt": "https://trippzy.app/logos/makemytrip.png",
+}
+
+
+def _curated_logo(name: str | None, domain: str | None) -> str | None:
+    keys = [_norm(n) for n in _name_forms(name or "")] + ([_norm(domain.split(".")[0])] if domain else [])
+    return next((CURATED_LOGOS[k] for k in keys if k in CURATED_LOGOS), None)
+
+
 def _known_domain(name: str | None) -> str | None:
     return next((KNOWN_PLATFORMS[_norm(n)] for n in _name_forms(name or "") if _norm(n) in KNOWN_PLATFORMS), None)
 
@@ -505,6 +518,10 @@ async def resolve_logo(s: Settings, *, kind: str, name: str | None, domain: str 
     if hit:
         return hit
     result = {"url": None, "source": None, "domain": dom}
+    if kind == "platform" and (own := _curated_logo(name, dom)):
+        result = {"url": own, "source": "curated", "domain": dom}
+        _logos[key] = result
+        return result
     async with httpx.AsyncClient(follow_redirects=True, headers={"user-agent": UA}) as http:
         if kind == "airline" and iata_c and len(iata_c) == 2:
             url = await _airline_by_iata(http, iata_c)

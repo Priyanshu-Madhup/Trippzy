@@ -123,3 +123,24 @@ def test_plain_barcodes_are_located_in_page_order():
 
 def test_a_page_of_text_has_no_barcode():
     assert documents._linear_barcodes(_page_with_barcodes(0)) == []
+
+
+def test_a_transparent_png_is_not_turned_black():
+    ticket = _page_with_barcodes(2).convert("RGBA")
+    px = ticket.load()
+    for yy in range(ticket.height):
+        for xx in range(ticket.width):
+            r, g, b, _ = px[xx, yy]
+            px[xx, yy] = (r, g, b, 0) if (r, g, b) == (236, 243, 252) else (r, g, b, 255)  # a see-through background
+    buf = io.BytesIO()
+    ticket.save(buf, "PNG")
+    assert documents._open_flat(buf.getvalue()).getpixel((5, 5)) == (255, 255, 255)
+    assert len(documents.find_codes(buf.getvalue(), "image/png")) == 2
+
+
+def test_a_small_barcode_picture_is_enlarged_before_giving_up():
+    page = _page_with_barcodes(2)
+    small = page.resize((int(page.width * 0.5), int(page.height * 0.5)), Image.LANCZOS)
+    buf = io.BytesIO()
+    small.save(buf, "JPEG", quality=85)
+    assert len(documents.find_codes(buf.getvalue(), "image/jpeg")) == 2

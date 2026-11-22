@@ -148,6 +148,7 @@ async def process_job(ctx: Ctx, job: dict) -> None:
     text, images = None, None
     page_images: list[bytes] = []
     found_codes = await asyncio.to_thread(documents.find_codes, data, mime)
+    log.info("codes scanned", extra={"mime": mime, "bytes": len(data), "found": [(c.format, bool(c.text)) for c in found_codes], "ticket_id": ticket_id})
     if mime == "application/pdf":
         try:
             text, _pages = await asyncio.to_thread(documents.pdf_text, data)

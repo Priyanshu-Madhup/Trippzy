@@ -342,6 +342,24 @@ def _linear_barcodes(img: Image.Image) -> list[FoundCode]:
     return sorted(biggest, key=lambda c: (c.center or (0, 0))[1])  # page order, top to bottom: onward leg first, then return
 
 
+def _open_flat(data: bytes) -> Image.Image:
+    """The picture as RGB on a white page: a transparent PNG must not turn its background black."""
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+    if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
+        rgba = img.convert("RGBA")
+        page = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        return Image.alpha_composite(page, rgba).convert("RGB")
+    return img.convert("RGB")
+
+
+def _safely(fn, *args) -> list[FoundCode]:
+    """One fallback failing must never cost the card the others (or a code that was already found)."""
+    try:
+        return fn(*args)
+    except Exception:
+        return []
+
+
 def _scan_image(img: Image.Image) -> list[FoundCode]:
     """A photo or screenshot of a ticket: try the picture as it is, then the variants a decoder needs when the code is
     small, soft, huge or low-contrast. The first pass that finds a code wins."""
@@ -361,9 +379,15 @@ def _scan_image(img: Image.Image) -> list[FoundCode]:
         if found := _scan(v, 1, zoom):
             return found
     for v in variants:
-        if found := _scan_unreadable(v, v.width / w):
+        if found := _safely(_scan_unreadable, v, v.width / w):
             return found
-    return _linear_barcodes(img) or _qr_like(img)
+    # Plain stripe barcodes, then a QR the decoder can't read. A small picture is enlarged first: thin bars need pixels.
+    sizes = [1.0] + ([2.0] if max(w, h) < 1600 else []) + ([3.0] if max(w, h) < 900 else [])
+    for k in sizes:
+        v = img if k == 1.0 else img.resize((int(w * k), int(h * k)), Image.LANCZOS)
+        if found := _safely(_linear_barcodes, v):
+            return [FoundCode(c.format, c.text, c.png, c.page, c.area, (c.center[0] / k, c.center[1] / k) if c.center else None) for c in found]
+    return _safely(_qr_like, img)
 
 
 def _looks_like_barcode(img: Image.Image) -> bool:
@@ -439,7 +463,7 @@ def find_codes(data: bytes, mime: str, max_pages: int = 8) -> list[FoundCode]:
             finally:
                 doc.close()
         else:
-            found = _scan_image(ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB"))
+            found = _scan_image(_open_flat(data))
     except Exception:
         return []
     seen: set[str] = set()
