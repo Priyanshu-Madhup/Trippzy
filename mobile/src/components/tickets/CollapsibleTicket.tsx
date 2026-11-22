@@ -1,26 +1,19 @@
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
-import { Text } from '@/components/ui/Text';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import type { Ticket } from '@/types';
-import { kindLabel } from '@/utils/ticket';
 import { CompactTicket } from './CompactTicket';
 import { TicketCard } from './TicketCard';
 import type { TicketHandlers } from './types';
 
-/**
- * Trippy's compact ticket that expands downward into the full card. The container's layout
- * animates (spring) as its content swaps, so opening/closing feels like the card grows or folds.
- */
+/** Trippy's compact ticket. Tapping it asks the trip screen to open the full card as a popup. */
 export function CollapsibleTicket({
   ticket,
   handlers,
-  expanded,
   onToggle,
   index,
   onLayoutY,
 }: {
   ticket: Ticket;
   handlers: TicketHandlers;
-  expanded: boolean;
   onToggle: (id: string, open: boolean) => void;
   index: number;
   /** Reports this card's Y inside the list, so "jump to ticket" can scroll to it. */
@@ -31,22 +24,12 @@ export function CollapsibleTicket({
 
   return (
     <Animated.View
-      layout={LinearTransition.springify().stiffness(320).damping(34).mass(0.9)}
       entering={FadeIn.delay(Math.min(index, 4) * 30).duration(220)}
       exiting={FadeOut.duration(180)}
       onLayout={(e) => onLayoutY?.(ticket.id, e.nativeEvent.layout.y)}
     >
       {collapsible ? (
-        <Text accessibilityRole="header" className="mb-1.5 ml-1.5 font-geist-semibold text-[11px] uppercase tracking-[1.2px] text-faint">
-          {kindLabel(ticket)}
-        </Text>
-      ) : null}
-      {collapsible ? (
-        expanded ? (
-          <TicketCard ticket={ticket} handlers={{ ...handlers, onCollapse: () => onToggle(ticket.id, false) }} />
-        ) : (
-          <CompactTicket ticket={ticket} onPress={() => onToggle(ticket.id, true)} onMenu={(anchor) => handlers.onMenu(ticket, anchor)} />
-        )
+        <CompactTicket ticket={ticket} onPress={() => onToggle(ticket.id, true)} onMenu={(anchor) => handlers.onMenu(ticket, anchor)} />
       ) : (
         <TicketCard ticket={ticket} handlers={handlers} />
       )}

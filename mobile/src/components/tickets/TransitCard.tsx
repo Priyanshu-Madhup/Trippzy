@@ -6,7 +6,7 @@ import { cn, hashHue } from '@/lib/utils';
 import type { BusData, Ticket, TrainData } from '@/types';
 import { durationLabel, formatPass, formatWeekday } from '@/utils/date';
 import { detailsOf, TYPE_META } from '@/utils/ticket';
-import { Detail, Perforation, PlatformBadge, ReviewNotice, TicketShell, type TicketHandlers } from './parts';
+import { Detail, PassengerRow, Perforation, PlatformBadge, ReviewNotice, TicketShell, type TicketHandlers } from './parts';
 
 const stationLine = (e?: { station?: string | null; station_code?: string | null } | null) =>
   e?.station ? (e.station_code && !e.station.includes(e.station_code) ? `${e.station} (${e.station_code})` : e.station) : null;
@@ -120,7 +120,7 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
             <Detail label="Dropping point" value={bus.arrival?.station} className="w-full" />
           </>
         ) : null}
-        <Detail label={(data?.passengers?.length ?? 0) > 1 ? 'Passengers' : 'Passenger'} value={data?.passengers?.join(', ')} className="w-full" />
+        <PassengerRow names={data?.passengers} />
       </View>
     </TicketShell>
   );

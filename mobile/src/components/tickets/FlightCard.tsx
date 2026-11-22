@@ -7,7 +7,7 @@ import { hashHue } from '@/lib/utils';
 import type { FlightData, Ticket } from '@/types';
 import { formatPass, formatShort, formatWeekday, minutesLabel } from '@/utils/date';
 import { detailsOf, flightJourney } from '@/utils/ticket';
-import { BaggageRow, Detail, Perforation, PlatformBadge, ReviewNotice, TicketShell, type TicketHandlers } from './parts';
+import { BaggageRow, Detail, PassengerRow, Perforation, PlatformBadge, ReviewNotice, TicketShell, type TicketHandlers } from './parts';
 
 export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: TicketHandlers }) {
   const data = detailsOf<FlightData>(ticket, 'flight');
@@ -115,6 +115,7 @@ export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: Tic
         <Detail label="Class" value={cabin} className="w-1/3" />
         <Detail label="Terminal" value={terminal} className="w-1/3" />
         <Detail label="Flight" value={journey?.outbound.length === 1 ? flightNumbers : null} mono className="w-1/3" />
+        <PassengerRow names={data?.passengers} />
         <BaggageRow value={data?.baggage} />
       </View>
 

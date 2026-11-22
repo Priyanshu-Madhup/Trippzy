@@ -11,6 +11,7 @@ import { useShadow } from '@/theme/useShadow';
 import type { FlightData, Ticket } from '@/types';
 import { formatShort, formatWeekday } from '@/utils/date';
 import { detailsOf, flightJourney, isStale, ticketView } from '@/utils/ticket';
+import { KindPill } from './parts';
 import type { TicketHandlers } from './types';
 import { Image } from 'expo-image';
 
@@ -63,6 +64,7 @@ export function CompactTicket({ ticket, onPress, onMenu }: { ticket: Ticket; onP
         ) : null}
       </View>
       <View className="min-w-0 flex-1">
+        <KindPill ticket={ticket} className="mb-1" />
         <View className="flex-row items-center gap-1.5">
           <Text numberOfLines={1} className="flex-shrink font-geist-semibold text-[15px] tracking-tight">
             {title}

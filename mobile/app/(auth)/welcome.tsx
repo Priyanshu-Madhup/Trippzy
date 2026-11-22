@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowRight, BedDouble, Luggage, Plane } from 'lucide-react-native';
@@ -69,9 +70,7 @@ function HeroCards() {
       >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-2.5">
-            <View className="size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-              <Text className="font-geist-bold text-xs text-white">EK</Text>
-            </View>
+            <Image source={require('../../assets/emirates-logo.png')} contentFit="cover" accessibilityLabel="Emirates logo" style={{ width: 36, height: 36, borderRadius: 12 }} />
             <View>
               <Text className="font-geist-semibold text-sm text-[#111]">Emirates</Text>
               <Text className="text-xs text-[#77746c]">EK569 · Economy</Text>

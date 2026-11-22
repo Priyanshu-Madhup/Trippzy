@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowRight, CalendarPlus, ChevronUp, Copy, Ellipsis, Info, Luggage, Pencil, type LucideIcon } from 'lucide-react-native';
+import { ArrowRight, CalendarPlus, Copy, Ellipsis, Info, Luggage, Pencil, User, X, type LucideIcon } from 'lucide-react-native';
 import { useRef, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils';
 import { useShadow } from '@/theme/useShadow';
 import type { Ticket } from '@/types';
+import { kindLabel } from '@/utils/ticket';
 import { TicketCode } from './TicketCode';
 import type { TicketHandlers } from './types';
 
@@ -60,6 +61,38 @@ export function BaggageRow({ value, className = 'w-full' }: { value: string | nu
           <View key={i} className="flex-row items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5">
             <Icon as={Luggage} size={14} className="text-ink-2" />
             <Text className="font-geist-medium text-[13px]">{p}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** What the document is ("Boarding pass", "Rail ticket"…), as a small pill. */
+export function KindPill({ ticket, className }: { ticket: Ticket; className?: string }) {
+  return (
+    <View className={cn('self-start rounded-full bg-surface-2 px-2.5 py-[3px]', className)}>
+      <Text numberOfLines={1} className="font-geist-semibold text-[10px] uppercase tracking-[1px] text-ink-2">
+        {kindLabel(ticket)}
+      </Text>
+    </View>
+  );
+}
+
+/** Passenger names as chips, one per traveller, on their own full-width row. */
+export function PassengerRow({ names, className = 'w-full' }: { names: string[] | null | undefined; className?: string }) {
+  const list = (names ?? []).map((n) => n.trim()).filter(Boolean);
+  if (!list.length) return null;
+  return (
+    <View className={cn('min-w-0 pr-3', className)}>
+      <Text className="text-[11px] font-geist-medium uppercase tracking-[1.1px] text-faint">{list.length > 1 ? 'Passengers' : 'Passenger'}</Text>
+      <View className="mt-1.5 flex-row flex-wrap gap-2">
+        {list.map((n, i) => (
+          <View key={`${n}-${i}`} className="max-w-full flex-row items-center gap-1.5 rounded-full bg-surface-2 py-1.5 pl-2.5 pr-3">
+            <Icon as={User} size={14} className="text-ink-2" />
+            <Text numberOfLines={1} className="flex-shrink font-geist-medium text-[13px]">
+              {n}
+            </Text>
           </View>
         ))}
       </View>
@@ -160,6 +193,9 @@ export function TicketShell({
     <Animated.View entering={FadeIn.duration(250)} accessibilityLabel={ticket.title ?? ticket.file_name ?? 'Ticket'}>
       <View style={card} className="z-10 overflow-hidden rounded-card border border-line bg-surface">
         {accent ? <LinearGradient colors={accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 4 }} /> : null}
+        <View className="-mb-2 px-5 pt-4">
+          <KindPill ticket={ticket} />
+        </View>
         {children}
         <TicketCode ticket={ticket} />
 
@@ -172,8 +208,8 @@ export function TicketShell({
         {/* Inside the card: collapse + the ⋯ menu (re-read with AI, delete). */}
         <View className="flex-row items-center justify-end px-3 pb-3 pt-1">
           {handlers.onCollapse ? (
-            <Pressable onPress={() => handlers.onCollapse?.(ticket)} accessibilityRole="button" accessibilityLabel="Collapse ticket" className="size-10 items-center justify-center rounded-full active:bg-surface-2">
-              <Icon as={ChevronUp} size={18} className="text-muted" />
+            <Pressable onPress={() => handlers.onCollapse?.(ticket)} accessibilityRole="button" accessibilityLabel="Close ticket" className="size-10 items-center justify-center rounded-full active:bg-surface-2">
+              <Icon as={X} size={18} className="text-muted" />
             </Pressable>
           ) : null}
           <Pressable

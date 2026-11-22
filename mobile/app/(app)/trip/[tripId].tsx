@@ -1,3 +1,4 @@
+import { BlurTargetView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, Pencil, Plus, RotateCw, SearchX, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
@@ -11,6 +12,7 @@ import { FilterTabs, SORT_OPTIONS, SearchBar, SortButton, type SortKey } from '@
 import { CollapsibleTicket } from '@/components/tickets/CollapsibleTicket';
 import { FailedTicketCard, StaleTicketCard } from '@/components/tickets/CompactTicket';
 import { TicketEditSheet } from '@/components/tickets/TicketEditSheet';
+import { TicketPopup } from '@/components/tickets/TicketPopup';
 import type { TicketHandlers } from '@/components/tickets/types';
 import { TripHero, TripHeroSkeleton } from '@/components/trips/TripHero';
 import { TripTimeline } from '@/components/trips/TripTimeline';
@@ -61,16 +63,11 @@ export default function TripDetail() {
   const [editing, setEditing] = useState<Ticket | null>(null);
   const [confirmTicket, setConfirmTicket] = useState<Ticket | null>(null);
   const [confirmTrip, setConfirmTrip] = useState(false);
-  // Cards start compact; tapping one (or its itinerary entry) expands it.
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const toggle = useCallback((id: string, open: boolean) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (open) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }, []);
+  // Cards stay compact in the list; tapping one (or its itinerary entry) opens it as a popup.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggle = useCallback((id: string, open: boolean) => setOpenId((cur) => (open ? id : cur === id ? null : cur)), []);
+  const closePopup = useCallback(() => setOpenId(null), []);
+  const blurRef = useRef<ComponentRef<typeof View>>(null);
 
   // ── jump to a ticket (from the itinerary, or from Home's "Tickets for this trip") ──
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -78,11 +75,11 @@ export default function TripDetail() {
   const cardY = useRef(new Map<string, number>());
   const scrollToTicket = useCallback(
     (id: string) => {
-      toggle(id, true);
       setTimeout(() => {
         const y = offsets.current.content + offsets.current.section + offsets.current.list + (cardY.current.get(id) ?? 0);
         scrollRef.current?.scrollTo({ y: Math.max(0, y - 96), animated: true });
-      }, 380); // let the expand animation settle so we land on the card's final position
+        setTimeout(() => toggle(id, true), 320); // let the list land on the card, then pop it open
+      }, 60);
     },
     [toggle],
   );
@@ -188,6 +185,7 @@ export default function TripDetail() {
 
   return (
     <View className="flex-1">
+      <BlurTargetView ref={blurRef} style={{ flex: 1 }}>
       <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + 110 }} refreshControl={pull}>
         {trip ? <TripHero trip={trip} bookings={bookings} onMenu={() => setTripMenu(true)} /> : <TripHeroSkeleton />}
 
@@ -240,7 +238,7 @@ export default function TripDetail() {
                       ) : t.processing_status !== 'completed' ? (
                         <StaleTicketCard key={t.id} ticket={t} handlers={handlers} />
                       ) : (
-                        <CollapsibleTicket key={t.id} ticket={t} handlers={handlers} expanded={expanded.has(t.id)} onToggle={toggle} index={i} onLayoutY={(id, y) => cardY.current.set(id, y)} />
+                        <CollapsibleTicket key={t.id} ticket={t} handlers={handlers} onToggle={toggle} index={i} onLayoutY={(id, y) => cardY.current.set(id, y)} />
                       ),
                     )}
                   </View>
@@ -287,6 +285,9 @@ export default function TripDetail() {
           <Text className="font-geist-semibold text-[15px] text-primary-ink">Upload</Text>
         </Pressable>
       ) : null}
+      </BlurTargetView>
+
+      <TicketPopup ticket={all.find((t) => t.id === openId) ?? null} handlers={handlers} onClose={closePopup} blurTarget={blurRef} />
 
       <ActionSheet
         open={sortMenu}

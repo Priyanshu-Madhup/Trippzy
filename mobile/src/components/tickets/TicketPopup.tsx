@@ -1,0 +1,137 @@
+import { BlurView } from 'expo-blur';
+import { useEffect, useRef, useState, type ComponentRef, type RefObject } from 'react';
+import { BackHandler, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import Animated, { Easing, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Rect } from 'react-native-svg';
+import { hashHue } from '@/lib/utils';
+import { useTheme } from '@/theme/ThemeProvider';
+import type { Ticket } from '@/types';
+import { TicketCard } from './TicketCard';
+import type { TicketHandlers } from './types';
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const RADIUS = 26;
+const BAR = 64; // length of the travelling light, in px
+
+/** Same hue family as the card's accent bar, so the light matches the ticket. */
+function accentOf(t: Ticket): string {
+  const hue = hashHue(t.airline_name ?? t.provider_name ?? t.document_type ?? 'ticket');
+  return `hsl(${(hue + 40) % 360}, 80%, 66%)`;
+}
+
+/** A small bright bar that circles the card's edge, forever, with a soft glow behind it. */
+function PerimeterLight({ width, height, color, progress }: { width: number; height: number; color: string; progress: ReturnType<typeof useSharedValue<number>> }) {
+  const inset = 1.5;
+  const w = Math.max(0, width - inset * 2);
+  const h = Math.max(0, height - inset * 2);
+  const r = Math.min(RADIUS - inset, w / 2, h / 2);
+  const perimeter = 2 * (w - 2 * r) + 2 * (h - 2 * r) + 2 * Math.PI * r;
+  const offset = useSharedValue(0);
+
+  useEffect(() => {
+    if (!perimeter) return;
+    offset.value = 0;
+    offset.value = withRepeat(withTiming(-perimeter, { duration: 3400, easing: Easing.linear }), -1, false);
+  }, [perimeter, offset]);
+
+  const props = useAnimatedProps(() => ({ strokeDashoffset: offset.value }));
+  const fade = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0.6, 1], [0, 1], 'clamp') }));
+  if (!perimeter) return null;
+  const dash = `${BAR} ${Math.max(1, perimeter - BAR)}`;
+
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, width, height }, fade]}>
+      <Svg width={width} height={height}>
+        <AnimatedRect x={inset} y={inset} width={w} height={h} rx={r} ry={r} fill="none" stroke={color} strokeOpacity={0.28} strokeWidth={7} strokeLinecap="round" strokeDasharray={dash} animatedProps={props} />
+        <AnimatedRect x={inset} y={inset} width={w} height={h} rx={r} ry={r} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeDasharray={dash} animatedProps={props} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/**
+ * Opens a ticket as a larger card floating over the trip, with the page behind it blurred.
+ * It springs in, and a small light runs around the card's edge while it is open.
+ * `blurTarget` is the view to blur on Android (iOS blurs whatever is behind).
+ */
+export function TicketPopup({
+  ticket,
+  handlers,
+  onClose,
+  blurTarget,
+}: {
+  ticket: Ticket | null;
+  handlers: TicketHandlers;
+  onClose: () => void;
+  blurTarget: RefObject<ComponentRef<typeof View> | null>;
+}) {
+  const { resolved } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
+  const progress = useSharedValue(0);
+  // Keep rendering the last ticket while the close animation plays.
+  const [shown, setShown] = useState<Ticket | null>(ticket);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (closing.current) clearTimeout(closing.current);
+    if (ticket) {
+      setShown(ticket);
+      progress.value = withSpring(1, { damping: 17, stiffness: 210, mass: 0.85 });
+    } else {
+      progress.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) });
+      closing.current = setTimeout(() => setShown(null), 230);
+    }
+    return () => {
+      if (closing.current) clearTimeout(closing.current);
+    };
+  }, [ticket, progress]);
+
+  useEffect(() => {
+    if (!ticket) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [ticket, onClose]);
+
+  const backdrop = useAnimatedStyle(() => ({ opacity: progress.value }));
+  const card = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.5, 1], [0, 1, 1], 'clamp'),
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [36, 0]) }, { scale: interpolate(progress.value, [0, 1], [0.88, 1]) }],
+  }));
+
+  const t = ticket ?? shown;
+  if (!t) return null;
+  const maxH = screenH - insets.top - insets.bottom - 40;
+
+  return (
+    <View pointerEvents={ticket ? 'auto' : 'none'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
+      <Animated.View style={[{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, backdrop]}>
+        <BlurView
+          blurTarget={blurTarget}
+          blurMethod="dimezisBlurView"
+          intensity={55}
+          tint={resolved === 'dark' ? 'dark' : 'light'}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        />
+        <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: resolved === 'dark' ? 'rgba(0,0,0,0.35)' : 'rgba(20,16,8,0.25)' }} />
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close ticket" />
+      </Animated.View>
+
+      <View pointerEvents="box-none" style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }}>
+        <Animated.View style={card}>
+          <View onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={{ maxHeight: maxH }}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingBottom: 4 }}>
+              <TicketCard ticket={t} handlers={{ ...handlers, onCollapse: () => onClose() }} />
+            </ScrollView>
+            <PerimeterLight width={box.w} height={box.h} color={accentOf(t)} progress={progress} />
+          </View>
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
