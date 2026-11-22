@@ -432,7 +432,7 @@ async def _logo_by_name(http: httpx.AsyncClient, s: Settings, name: str, domain:
 
     try:
         best: tuple[str, int] | None = None
-        for q in forms:
+        for q in [*forms, *([domain] if domain else [])]:  # the booking's website is a query too: brand search knows sites
             if (hit := await search(q)) and (best is None or hit[1] > best[1]):
                 best = hit
         if best is None:
@@ -441,6 +441,38 @@ async def _logo_by_name(http: httpx.AsyncClient, s: Settings, name: str, domain:
         return best[0] if best else None
     except Exception:
         return None
+
+
+# Booking sites people actually use. A photo of a ticket shows the name but rarely the website, so map the name to its site.
+KNOWN_PLATFORMS = {
+    "yatra": "yatra.com",
+    "makemytrip": "makemytrip.com",
+    "mmt": "makemytrip.com",
+    "goibibo": "goibibo.com",
+    "cleartrip": "cleartrip.com",
+    "easemytrip": "easemytrip.com",
+    "ixigo": "ixigo.com",
+    "redbus": "redbus.in",
+    "abhibus": "abhibus.com",
+    "paytm": "paytm.com",
+    "irctc": "irctc.co.in",
+    "bookingcom": "booking.com",
+    "booking": "booking.com",
+    "agoda": "agoda.com",
+    "expedia": "expedia.com",
+    "airbnb": "airbnb.com",
+    "tripcom": "trip.com",
+    "kayak": "kayak.com",
+    "tripadvisor": "tripadvisor.com",
+    "hotelscom": "hotels.com",
+    "oyo": "oyorooms.com",
+    "treebo": "treebo.com",
+    "zostel": "zostel.com",
+}
+
+
+def _known_domain(name: str | None) -> str | None:
+    return next((KNOWN_PLATFORMS[_norm(n)] for n in _name_forms(name or "") if _norm(n) in KNOWN_PLATFORMS), None)
 
 
 async def _by_domain(http, s: Settings, domain: str | None, name: str | None = None):
@@ -479,6 +511,8 @@ async def resolve_logo(s: Settings, *, kind: str, name: str | None, domain: str 
             if url:
                 result = {"url": url, "source": "airline_cdn", "domain": dom}
         valid_dom = dom if dom and re.fullmatch(r"[a-z0-9-]+(\.[a-z0-9-]+)+", dom) else None
+        if not valid_dom and kind == "platform":
+            valid_dom = _known_domain(name)
         if not result["url"] and (valid_dom or name):
             h = await _by_domain(http, s, valid_dom, name)
             if h:
