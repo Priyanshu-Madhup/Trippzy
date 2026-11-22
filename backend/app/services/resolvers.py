@@ -493,7 +493,8 @@ async def resolve_ticket_visuals(s: Settings, ext) -> dict:
     jobs: dict[str, asyncio.Future] = {}
     t, d = ext.document_type, ext.details
 
-    if ext.booking_platform.name and ext.booking_platform.domain:
+    # The name alone is enough: a photo of a ticket often shows "Yatra" but never its website, and logos are found by name too.
+    if ext.booking_platform.name:
         jobs["booking_platform_logo_url"] = resolve_logo(s, kind="platform", name=ext.booking_platform.name, domain=ext.booking_platform.domain, iata=None)
     if t == "flight":
         jobs["airline_logo_url"] = resolve_logo(s, kind="airline", name=d.airline.name, domain=d.airline.domain, iata=d.airline.iata_code)
@@ -503,7 +504,7 @@ async def resolve_ticket_visuals(s: Settings, ext) -> dict:
         if d.hotel.domain:
             jobs["provider_logo_url"] = resolve_logo(s, kind="provider", name=d.hotel.name, domain=d.hotel.domain, iata=None)
     elif t in ("train", "bus"):
-        if d.operator.domain:
+        if d.operator.name or d.operator.domain:
             jobs["provider_logo_url"] = resolve_logo(s, kind="provider", name=d.operator.name, domain=d.operator.domain, iata=None)
     elif t == "activity":
         name = d.venue or d.name
