@@ -130,6 +130,32 @@ async def _wiki_title(http, title: str, must_match: str | None = None):
     return _pick_wiki(pages, landscape=False)
 
 
+_NAME_NOISE = {"the", "hotel", "hotels", "resort", "resorts", "and", "by", "at", "of", "spa", "suites", "inn"}
+
+
+def _title_matches(title: str, name: str) -> bool:
+    """A Wikipedia page is about this property only if its title carries the property's own words
+    ("The Taj Mahal Palace" ↔ "Taj Mahal Palace Hotel"), not just the city or a famous neighbour."""
+    words = [w for w in re.findall(r"[a-z0-9]+", name.lower()) if w not in _NAME_NOISE]
+    if not words:
+        return False
+    have = set(re.findall(r"[a-z0-9]+", title.lower()))
+    need = len(words) if len(words) <= 3 else -(-len(words) * 2 // 3)
+    return sum(w in have for w in words) >= need
+
+
+async def _wiki_hotel(http, name: str, city: str | None):
+    """The property's own Wikipedia photo (famous hotels have one), found by searching and then checking the title."""
+    search = f"{name} hotel {city or ''}".strip()
+    d = await _get_json(
+        http,
+        f"https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=6&prop=pageimages&pithumbsize=1800&gsrsearch={quote(search)}",
+        headers={"user-agent": UA},
+    )
+    pages = [p for p in ((d or {}).get("query", {}).get("pages", {})).values() if _title_matches(p.get("title", ""), name)]
+    return _pick_wiki(pages, landscape=True) or _pick_wiki(pages, landscape=False)
+
+
 async def _wiki_search(http, query: str):
     d = await _get_json(
         http,
@@ -213,7 +239,7 @@ async def resolve_image(s: Settings, query: str, kind: str, context: str | None 
             ]
         elif kind == "hotel":
             full = f"{q} {ctx}".strip()
-            tasks = [lambda: _google_places(http, s, full), lambda: _wiki_title(http, q, q)]
+            tasks = [lambda: _wiki_hotel(http, q, ctx), lambda: _google_places(http, s, full), lambda: _wiki_title(http, q, q)]
         else:
             full = f"{q} {ctx}".strip()
             tasks = [lambda: _wiki_title(http, q, q), lambda: _unsplash(http, s, full), lambda: _pexels(http, s, full)]

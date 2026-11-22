@@ -20,7 +20,7 @@ export function HotelCard({ ticket, handlers }: { ticket: Ticket; handlers: Tick
   const nights = data?.nights ?? (daysBetween(checkIn, checkOut) || null);
 
   return (
-    <TicketShell ticket={ticket} handlers={handlers} openLabel="Open booking">
+    <TicketShell ticket={ticket} handlers={handlers} openLabel="Open booking" imageFirst>
       <DestinationImage src={ticket.image_url} seed={city ?? name} style={{ aspectRatio: 16 / 9 }}>
         <LinearGradient colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.45)']} locations={[0, 0.5, 1]} style={{ position: 'absolute', inset: 0 }} />
         <View className="absolute left-4 top-4 flex-row items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1">

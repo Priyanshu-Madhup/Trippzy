@@ -25,7 +25,7 @@ export function ReservationCard({ ticket, handlers }: { ticket: Ticket; handlers
   const time = [ticket.start_time, ticket.end_time].filter(Boolean).join(' – ');
 
   return (
-    <TicketShell ticket={ticket} handlers={handlers} openLabel={kind === 'restaurant' ? 'Open reservation' : 'Open ticket'}>
+    <TicketShell ticket={ticket} handlers={handlers} openLabel={kind === 'restaurant' ? 'Open reservation' : 'Open ticket'} imageFirst>
       {ticket.image_url ? (
         <DestinationImage src={ticket.image_url} seed={city ?? title} style={{ aspectRatio: 2 }}>
           <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)']} style={{ position: 'absolute', inset: 0 }} />

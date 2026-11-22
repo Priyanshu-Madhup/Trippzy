@@ -179,6 +179,7 @@ export function TicketShell({
   children,
   accent,
   openLabel = 'Open ticket',
+  imageFirst,
 }: {
   ticket: Ticket;
   handlers: TicketHandlers;
@@ -186,6 +187,8 @@ export function TicketShell({
   /** Two gradient colours for the 4px top bar (flight cards). */
   accent?: [string, string];
   openLabel?: string;
+  /** The card's first child is a full-bleed photo: give the kind pill its own room instead of tucking it under the content. */
+  imageFirst?: boolean;
 }) {
   const card = useShadow('card');
   const dots = useRef<ComponentRef<typeof View>>(null);
@@ -193,7 +196,7 @@ export function TicketShell({
     <Animated.View entering={FadeIn.duration(250)} accessibilityLabel={ticket.title ?? ticket.file_name ?? 'Ticket'}>
       <View style={card} className="z-10 overflow-hidden rounded-card border border-line bg-surface">
         {accent ? <LinearGradient colors={accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 4 }} /> : null}
-        <View className="-mb-2 px-5 pt-4">
+        <View className={cn('px-5 pt-4', imageFirst ? 'pb-3' : '-mb-2')}>
           <KindPill ticket={ticket} />
         </View>
         {children}
