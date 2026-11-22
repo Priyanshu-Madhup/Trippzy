@@ -35,7 +35,7 @@ export function Detail({
   if (value === null || value === undefined || value === '') return null;
   return (
     <View className={cn('min-w-0 pr-3', className)}>
-      <Text className="text-[11px] font-geist-medium uppercase tracking-[1.1px] text-faint">{label}</Text>
+      <Text numberOfLines={1} className="text-[11px] font-geist-medium uppercase tracking-[1.1px] text-faint">{label}</Text>
       <View className="mt-1 flex-row items-center gap-1.5">
         <Text numberOfLines={mono ? 1 : 2} className={cn('flex-shrink', mono ? 'font-geist-mono-semibold text-[14px] tracking-[0.6px]' : 'font-geist-semibold text-[15px]')}>
           {value}

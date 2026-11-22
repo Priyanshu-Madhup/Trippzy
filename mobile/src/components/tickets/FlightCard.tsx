@@ -110,9 +110,9 @@ export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: Tic
       <Perforation className="mt-4" />
 
       <View className="flex-row px-5 pt-1">
-        <Detail label="PNR" value={ticket.booking_reference} mono copy={ticket.booking_reference} className="flex-[1.75]" />
-        <Detail label="Seat" value={seat} mono className="flex-1" />
-        <Detail label="Terminal" value={terminal} mono className="flex-1" />
+        <Detail label="PNR" value={ticket.booking_reference} mono copy={ticket.booking_reference} className="flex-[1.55]" />
+        <Detail label="Seat" value={seat} mono className="flex-[0.9]" />
+        <Detail label="Terminal" value={terminal} mono className="flex-[1.3]" />
         <Detail label="Flight" value={journey?.outbound.length === 1 ? flightNumbers : null} mono className="flex-[1.25]" />
       </View>
       <View className="mt-4 gap-4 px-5 pb-2">

@@ -172,6 +172,20 @@ def _finder_hits(dark: np.ndarray, step: int = 2) -> list[tuple[float, float, fl
     return hits
 
 
+def _is_finder(dark: np.ndarray, x: float, y: float, m: float) -> bool:
+    """A real QR finder square: a 3x3-module dark block, a light ring, then a dark ring. Bars and letters that merely
+    cross in the 1:1:3:1:1 rhythm along one row do not have this 2-D shape."""
+    half = int(round(3.5 * m))
+    x0, y0 = int(round(x)) - half, int(round(y)) - half
+    if x0 < 0 or y0 < 0 or x0 + 2 * half + 1 > dark.shape[1] or y0 + 2 * half + 1 > dark.shape[0]:
+        return False
+    patch = dark[y0 : y0 + 2 * half + 1, x0 : x0 + 2 * half + 1]
+    yy, xx = np.mgrid[-half : half + 1, -half : half + 1]
+    ring = np.maximum(np.abs(yy), np.abs(xx)) / m
+    core, light, outer = ring <= 1.5, (ring > 1.5) & (ring <= 2.5), (ring > 2.5) & (ring <= 3.5)
+    return bool(patch[core].mean() >= 0.8 and (~patch[light]).mean() >= 0.7 and patch[outer].mean() >= 0.7)
+
+
 def _qr_like(img: Image.Image) -> list[FoundCode]:
     """A QR code the decoder can't read (a mock-up, a sample ticket, a damaged print) still has its three finder
     squares. Find them and crop the code so the card can show it, with no payload."""
@@ -185,6 +199,7 @@ def _qr_like(img: Image.Image) -> list[FoundCode]:
         cols = [(y, x, m) for (x, y, m) in _finder_hits(np.ascontiguousarray(dark.T))]
         # a finder square shows up in both directions, at about the same place
         both = [(x, y, m) for (x, y, m) in rows if any(abs(cx - x) < 2 * m and abs(cy - y) < 2 * m and 0.6 < cm / m < 1.6 for cx, cy, cm in cols)]
+        both = [(x, y, m) for (x, y, m) in both if _is_finder(dark, x, y, m)]
         centres: list[list[float]] = []
         for x, y, m in both:
             for c in centres:
@@ -348,7 +363,7 @@ def _scan_image(img: Image.Image) -> list[FoundCode]:
     for v in variants:
         if found := _scan_unreadable(v, v.width / w):
             return found
-    return _qr_like(img) or _linear_barcodes(img)
+    return _linear_barcodes(img) or _qr_like(img)
 
 
 def _looks_like_barcode(img: Image.Image) -> bool:
