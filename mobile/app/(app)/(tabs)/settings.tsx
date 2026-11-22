@@ -15,6 +15,7 @@ import { useAppUpdate } from '@/hooks/useAppUpdate';
 import { useProfile } from '@/hooks/useProfile';
 import { qk } from '@/lib/queryClient';
 import { deleteAccount, updateProfile } from '@/services/account';
+import { playBuild } from '@/lib/env';
 import { currentVersion, startUpdate } from '@/services/appUpdate';
 import { calendarAvailable, ensureCalendarAccess, getAutoAdd, setAutoAdd } from '@/services/calendar';
 import { useTheme, type ThemePreference } from '@/theme/ThemeProvider';
@@ -121,6 +122,7 @@ export default function Settings() {
               Read
             </Button>
           </Row>
+          {playBuild ? null : (
           <Row label={info?.update_available ? `Version ${info.latest} is available` : 'Updates'} hint={info?.update_available ? 'Tap to download it. Your trips stay as they are.' : info?.latest ? 'You’re up to date.' : 'Check whether a newer version is out.'}>
             {info?.update_available ? (
               <Button size="sm" icon={Download} onPress={() => startUpdate(info)}>
@@ -143,6 +145,7 @@ export default function Settings() {
               </Button>
             )}
           </Row>
+          )}
         </Section>
 
         <Section title="Account">

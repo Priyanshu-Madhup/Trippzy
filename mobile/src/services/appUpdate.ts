@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Linking } from 'react-native';
-import { env } from '@/lib/env';
+import { env, playBuild } from '@/lib/env';
 import { releaseNotes } from '@/utils/releaseNotes';
 
 export { releaseNotes };
@@ -20,7 +20,7 @@ export const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
 
 /** Asks our server for the newest release. Public endpoint; fails quietly (offline, server down, no release yet). */
 export async function fetchLatest(): Promise<AppVersion | null> {
-  if (!env.apiUrl) return null;
+  if (!env.apiUrl || playBuild) return null;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {

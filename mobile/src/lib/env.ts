@@ -13,4 +13,7 @@ export const env = {
 /** Apple sign-in needs the provider enabled in Clerk (and Apple developer setup). Off until you turn it on. */
 export const enableApple = process.env.EXPO_PUBLIC_ENABLE_APPLE === 'true';
 
+/** The Google Play build is updated by Play itself: Play forbids an app from downloading and installing its own APKs. */
+export const playBuild = process.env.EXPO_PUBLIC_PLAY_BUILD === 'true';
+
 export const isConfigured = !!env.apiUrl && !!env.clerkPublishableKey;

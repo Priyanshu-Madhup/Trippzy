@@ -19,6 +19,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_PLAY_BUILD": "true",
+        "EXPO_PUBLIC_API_URL": "https://api.trippzy.app",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsudHJpcHB6eS5hcHAk"
+      },
       "android": {
         "buildType": "app-bundle"
       }
