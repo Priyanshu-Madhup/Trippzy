@@ -259,6 +259,74 @@ def _scan_unreadable(img: Image.Image, zoom: float = 1.0) -> list[FoundCode]:
     return [best] if best else []
 
 
+def _linear_barcodes(img: Image.Image) -> list[FoundCode]:
+    """Plain bar barcodes (Code 128, Code 39…) that no decoder could read, found by their look: every row is the same
+    stripe pattern, with many light/dark changes across and almost none down. Text, tables and photos don't behave like that."""
+    scale = 1.0
+    if max(img.size) > 1800:
+        scale = 1800 / max(img.size)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+    g = np.asarray(img.convert("L"), dtype=np.int16)
+    dark = g < (int(g.min()) + int(g.max())) // 2
+    h, w = dark.shape
+    if h < 40 or w < 100:
+        return []
+    WIN_H, WIN_W, SY, SX, LAG = 12, 64, 4, 8, 4
+    trans = np.zeros((h, w), dtype=np.int32)
+    trans[:, 1:] = dark[:, 1:] != dark[:, :-1]
+    same = np.ones((h, w), dtype=np.int32)
+    same[:-LAG] = dark[:-LAG] == dark[LAG:]
+
+    def integral(a: np.ndarray) -> np.ndarray:
+        return np.pad(a.cumsum(0).cumsum(1), ((1, 0), (1, 0)))
+
+    it, isame, idark = integral(trans), integral(same), integral(dark.astype(np.int32))
+
+    def box(i: np.ndarray, y: int, x: int) -> int:
+        return int(i[y + WIN_H, x + WIN_W] - i[y, x + WIN_W] - i[y + WIN_H, x] + i[y, x])
+
+    area = WIN_H * WIN_W
+    ys, xs = list(range(0, h - WIN_H, SY)), list(range(0, w - WIN_W, SX))
+    grid = np.zeros((len(ys), len(xs)), dtype=bool)
+    for r, y in enumerate(ys):
+        for c, x in enumerate(xs):
+            if box(it, y, x) >= 8 * WIN_H and box(isame, y, x) >= 0.93 * area and 0.22 * area <= box(idark, y, x) <= 0.78 * area:
+                grid[r, c] = True
+    seen = np.zeros_like(grid)
+    found: list[FoundCode] = []
+    for r0 in range(grid.shape[0]):
+        for c0 in range(grid.shape[1]):
+            if not grid[r0, c0] or seen[r0, c0]:
+                continue
+            stack, cells = [(r0, c0)], []
+            seen[r0, c0] = True
+            while stack:
+                r, c = stack.pop()
+                cells.append((r, c))
+                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < grid.shape[0] and 0 <= cc < grid.shape[1] and grid[rr, cc] and not seen[rr, cc]:
+                        seen[rr, cc] = True
+                        stack.append((rr, cc))
+            top, bottom = min(ys[r] for r, _ in cells), max(ys[r] for r, _ in cells) + WIN_H
+            left, right = min(xs[c] for _, c in cells), max(xs[c] for _, c in cells) + WIN_W
+            bw, bh = right - left, bottom - top
+            if bw < 90 or bh < 26 or not 1.5 <= bw / bh <= 14:
+                continue
+            ink = np.argwhere(dark[top:bottom, left:right])  # trim to the bars themselves
+            (y0, x0), (y1, x1) = ink.min(0), ink.max(0) + 1
+            box_ = (max(left + int(x0) - 6, 0), max(top + int(y0) - 6, 0), min(left + int(x1) + 6, w), min(top + int(y1) + 6, h))
+            crop = img.crop(box_)
+            if _printed_code_like(crop):
+                found.append(
+                    FoundCode(
+                        "barcode", "", _sharpen_png(_png(crop)), 1, crop.width * crop.height, ((box_[0] + box_[2]) / 2 / scale, (box_[1] + box_[3]) / 2 / scale)
+                    )
+                )
+    biggest = sorted(found, key=lambda c: -c.area)[:4]
+    return sorted(biggest, key=lambda c: (c.center or (0, 0))[1])  # page order, top to bottom: onward leg first, then return
+
+
 def _scan_image(img: Image.Image) -> list[FoundCode]:
     """A photo or screenshot of a ticket: try the picture as it is, then the variants a decoder needs when the code is
     small, soft, huge or low-contrast. The first pass that finds a code wins."""
@@ -280,7 +348,7 @@ def _scan_image(img: Image.Image) -> list[FoundCode]:
     for v in variants:
         if found := _scan_unreadable(v, v.width / w):
             return found
-    return _qr_like(img)
+    return _qr_like(img) or _linear_barcodes(img)
 
 
 def _looks_like_barcode(img: Image.Image) -> bool:

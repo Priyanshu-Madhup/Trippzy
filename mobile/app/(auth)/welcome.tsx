@@ -152,7 +152,8 @@ function HeroCards() {
               <Text className="text-xs text-[#77746c]">EK569 · Economy</Text>
             </View>
           </View>
-          <View className="rounded-full bg-[#f1f0ec] px-2.5 py-1">
+          <View className="flex-row items-center gap-1.5 rounded-full bg-[#f1f0ec] py-1 pl-1 pr-2.5">
+            <Image source={require('../../assets/makemytrip-logo.png')} contentFit="cover" accessibilityLabel="MakeMyTrip logo" style={{ width: 20, height: 20, borderRadius: 6 }} />
             <Text className="font-geist-medium text-[11px] text-[#111]">MakeMyTrip</Text>
           </View>
         </View>

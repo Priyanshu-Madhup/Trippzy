@@ -92,3 +92,34 @@ def test_small_codes_are_enlarged_in_whole_steps():
     small.save(buf, "PNG")
     out = Image.open(io.BytesIO(documents._sharpen_png(buf.getvalue())))
     assert out.width % 186 == 0 and 600 <= out.width <= 1200
+
+
+def _page_with_barcodes(n: int) -> Image.Image:
+    import numpy as np
+    from PIL import ImageDraw
+
+    page = Image.new("RGB", (1170, 1280), (236, 243, 252))
+    draw = ImageDraw.Draw(page)
+    for i in range(14):  # lines of "text": short dark runs that differ row to row, like real type
+        y = 40 + i * 30
+        for x in range(60, 700, 14):
+            if (x * 7 + i * 13) % 5:
+                draw.rectangle((x, y, x + 8, y + 12 + (x + i) % 5), fill=(30, 40, 60))
+    for k in range(n):
+        bc = zxingcpp.create_barcode(f"6E504324112{k}BOM1", zxingcpp.BarcodeFormat.Code128)
+        a = np.asarray(bc.to_image(scale=3))
+        code = Image.fromarray(a if a.ndim == 2 else a[..., 0]).convert("RGB")
+        code = code.resize((240, 70), Image.NEAREST)
+        page.paste(code, (880, 300 + k * 220))
+    return page
+
+
+def test_plain_barcodes_are_located_in_page_order():
+    found = documents._linear_barcodes(_page_with_barcodes(2))
+    assert len(found) == 2 and all(c.format == "barcode" and c.text == "" for c in found)
+    assert found[0].center[1] < found[1].center[1]  # top to bottom
+    assert abs(found[0].center[0] - 1000) < 30
+
+
+def test_a_page_of_text_has_no_barcode():
+    assert documents._linear_barcodes(_page_with_barcodes(0)) == []
