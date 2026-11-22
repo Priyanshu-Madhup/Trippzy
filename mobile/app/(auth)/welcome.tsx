@@ -1,9 +1,9 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowRight, BedDouble, Luggage, Plane } from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, type PressableProps } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeInDown, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SkyBackdrop } from '@/components/auth/SkyBackdrop';
 import { Logo } from '@/components/brand/Logo';
@@ -60,6 +60,82 @@ function WelcomeButton({ label, primary, ...props }: PressableProps & { label: s
   );
 }
 
+const LOOP_MS = 4800;
+const FLIGHT = 0.6; // share of each loop spent in the air; the rest is the "landed" pause
+const CIRCLE = 32;
+const easeInOut = (t: number) => {
+  'worklet';
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+};
+
+/**
+ * A little jet that flies along the dotted line: it eases out of Bengaluru, lifts and grows a touch at mid-flight,
+ * leaves a solid trail behind it, lands in Dubai with a ripple, rests, and goes again. Tap it to fly it again now.
+ */
+function FlightRoute() {
+  const [width, setWidth] = useState(0);
+  const clock = useSharedValue(0);
+  const bump = useSharedValue(1);
+
+  const start = useCallback(() => {
+    cancelAnimation(clock);
+    clock.value = 0;
+    clock.value = withRepeat(withTiming(1, { duration: LOOP_MS, easing: Easing.linear }), -1, false);
+  }, [clock]);
+
+  useEffect(() => {
+    start();
+    return () => cancelAnimation(clock);
+  }, [start, clock]);
+
+  const travel = Math.max(0, width - CIRCLE);
+
+  const circle = useAnimatedStyle(() => {
+    const f = easeInOut(Math.min(1, clock.value / FLIGHT));
+    const arc = Math.sin(Math.PI * f);
+    return { transform: [{ translateX: f * travel }, { translateY: -arc * 7 }, { scale: (1 + arc * 0.14) * bump.value }] };
+  });
+  const trail = useAnimatedStyle(() => {
+    const f = easeInOut(Math.min(1, clock.value / FLIGHT));
+    // The trail fades out during the landed pause, ready for the next flight.
+    const fade = clock.value < FLIGHT ? 1 : Math.max(0, 1 - (clock.value - FLIGHT) / (1 - FLIGHT) / 0.8);
+    return { width: f * travel + CIRCLE / 2, opacity: fade };
+  });
+  const ripple = useAnimatedStyle(() => {
+    const t = Math.min(1, Math.max(0, (clock.value - FLIGHT) / 0.3));
+    return { opacity: t > 0 && t < 1 ? 0.55 * (1 - t) : 0, transform: [{ scale: 1 + t * 2.6 }] };
+  });
+  const arrived = useAnimatedStyle(() => ({ backgroundColor: clock.value >= FLIGHT - 0.01 && clock.value < 0.97 ? '#111' : '#a7a49b' }));
+
+  return (
+    <Pressable
+      onPress={() => {
+        bump.value = withSequence(withTiming(0.82, { duration: 90 }), withSpring(1, { damping: 7, stiffness: 260 }));
+        start();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="Replay the flight"
+      className="mb-8 h-10 flex-1 justify-center px-3"
+    >
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} className="h-8 justify-center">
+        {/* the dotted route, a solid trail that grows behind the jet, and the two end dots */}
+        <View className="absolute inset-x-0 border-t border-dashed border-[#a7a49b]" style={{ top: 15 }} />
+        <Animated.View className="absolute left-0 h-[2px] rounded-full bg-[#111]" style={[{ top: 15 }, trail]} />
+        <View className="absolute left-0 size-1.5 rounded-full bg-[#111]" style={{ top: 13 }} />
+        <View className="absolute right-0" style={{ top: 13, width: 6, height: 6 }}>
+          <Animated.View className="absolute inset-0 rounded-full bg-[#111]" style={ripple} />
+          <Animated.View className="absolute inset-0 rounded-full" style={arrived} />
+        </View>
+        <Animated.View style={[{ width: CIRCLE, height: CIRCLE, boxShadow: '0 4px 10px -2px rgba(0,0,0,0.3)' }, circle]} className="items-center justify-center rounded-full border border-black/5 bg-white">
+          <View style={{ transform: [{ rotate: '45deg' }] }}>
+            <Icon as={Plane} size={16} className="text-[#111]" />
+          </View>
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
+}
+
 function HeroCards() {
   return (
     <View className="mt-14 h-[380px] w-full max-w-[420px] self-center" accessibilityElementsHidden>
@@ -86,13 +162,7 @@ function HeroCards() {
             <Text className="mt-1 text-xs text-[#77746c]">Bengaluru</Text>
             <Text className="mt-1.5 font-geist-mono-semibold text-sm text-[#111]">04:15</Text>
           </View>
-          <View className="mb-8 flex-1 flex-row items-center gap-1 px-3">
-            <View className="h-px flex-1 border-t border-dashed border-[#a7a49b]" />
-            <View style={{ transform: [{ rotate: '45deg' }] }}>
-              <Icon as={Plane} size={16} className="text-[#111]" />
-            </View>
-            <View className="h-px flex-1 border-t border-dashed border-[#a7a49b]" />
-          </View>
+          <FlightRoute />
           <View className="items-end">
             <Text className="font-geist-semibold text-[32px] leading-[32px] text-[#111]">DXB</Text>
             <Text className="mt-1 text-xs text-[#77746c]">Dubai</Text>
@@ -118,7 +188,7 @@ function HeroCards() {
         style={{ transform: [{ rotate: '4deg' }], boxShadow: '0 20px 40px -12px rgba(0,0,0,0.45)' }}
         className="absolute bottom-0 right-0 w-[70%] overflow-hidden rounded-3xl bg-white"
       >
-        <LinearGradient colors={['#2b3a67', '#b7698a', '#f2c48d']} locations={[0, 0.55, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: 112 }} />
+        <Image source={require('../../assets/marriott-hotel.png')} contentFit="cover" accessibilityLabel="Hotel exterior at dusk" style={{ height: 112, width: '100%' }} />
         <View className="p-4">
           <View className="flex-row items-center gap-1.5">
             <Icon as={BedDouble} size={14} className="text-[#77746c]" />

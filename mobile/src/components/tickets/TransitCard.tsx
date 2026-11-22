@@ -56,7 +56,7 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
 
       <ReviewNotice ticket={ticket} />
 
-      <View className="mt-6 flex-row items-start gap-3 px-5">
+      <View className="mt-5 flex-row items-start gap-3 px-5">
         <View className="min-w-0 flex-1">
           <Text numberOfLines={1} className="font-geist-semibold text-[22px] leading-[26px]" style={{ letterSpacing: -0.55 }}>
             {from ?? '—'}
@@ -94,32 +94,30 @@ function TransitCard({ ticket, handlers, kind, data }: { ticket: Ticket; handler
         </View>
       </View>
 
-      <Text className="mt-5 px-5 font-geist-semibold text-xs tracking-[1.4px]">
+      <Text className="mt-4 px-5 font-geist-semibold text-xs tracking-[1.4px]">
         {depDate ? formatPass(depDate) : 'Date not provided'}
         {depDate ? <Text className="font-geist-medium tracking-normal text-muted">{'  '}{formatWeekday(depDate)}</Text> : null}
       </Text>
 
       <Perforation className="mt-4" />
 
-      <View className="flex-row flex-wrap gap-y-4 px-5 pb-2 pt-1">
-        <Detail label={kind === 'train' ? 'PNR' : 'Ticket'} value={ticket.booking_reference} mono copy={ticket.booking_reference} className="w-2/3" />
-        <Detail label="Seat" value={data?.seat} mono className="w-1/3" />
+      <View className="flex-row px-5 pt-1">
+        <Detail label={kind === 'train' ? 'PNR' : 'Ticket'} value={ticket.booking_reference} mono copy={ticket.booking_reference} className="flex-[1.75]" />
+        <Detail label="Seat" value={data?.seat} mono className="flex-1" />
+        {train ? <Detail label="Coach" value={train.coach} mono className="flex-1" /> : null}
+        {train ? <Detail label="Berth" value={train.berth} className="flex-1" /> : null}
+      </View>
+      <View className="mt-4 gap-4 px-5 pb-2">
         {train ? (
-          <>
-            <Detail label="Platform" value={train.departure?.platform} mono className="w-1/3" />
-            <Detail label="Coach" value={train.coach} mono className="w-1/3" />
-            <Detail label="Berth" value={train.berth} className="w-1/3" />
-            <Detail label="Class" value={train.travel_class} className="w-2/3" />
-            <Detail label="Train no." value={train.train_number} mono className="w-1/3" />
-            <Detail label="Boarding station" value={stationLine(train.departure)} className="w-full" />
-          </>
+          <View className="flex-row">
+            <Detail label="Class" value={train.travel_class} className="flex-[1.75]" />
+            <Detail label="Train no." value={train.train_number} mono className="flex-1" />
+            <Detail label="Platform" value={train.departure?.platform} mono className="flex-1" />
+          </View>
         ) : null}
-        {bus ? (
-          <>
-            <Detail label="Boarding point" value={bus.departure?.station} className="w-full" />
-            <Detail label="Dropping point" value={bus.arrival?.station} className="w-full" />
-          </>
-        ) : null}
+        {train ? <Detail label="Boarding station" value={stationLine(train.departure)} className="w-full" /> : null}
+        {bus ? <Detail label="Boarding point" value={bus.departure?.station} className="w-full" /> : null}
+        {bus ? <Detail label="Dropping point" value={bus.arrival?.station} className="w-full" /> : null}
         <PassengerRow names={data?.passengers} />
       </View>
     </TicketShell>

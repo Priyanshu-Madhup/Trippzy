@@ -68,7 +68,7 @@ export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: Tic
       ) : null}
 
       {/* Route */}
-      <View className="mt-6 flex-row items-start gap-2 px-5">
+      <View className="mt-5 flex-row items-start gap-2 px-5">
         <Endpoint code={fromCode} city={fromCity} time={depTime} />
         <View className="flex-1 items-center pt-3">
           <View className="w-full flex-row items-center gap-1.5">
@@ -89,7 +89,7 @@ export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: Tic
         <Endpoint code={toCode} city={toCity} time={arrTime} align="right" shift={dayShift} />
       </View>
 
-      <View className="mt-5 flex-row items-center justify-between gap-3 px-5">
+      <View className="mt-4 flex-row items-center justify-between gap-3 px-5">
         <Text className="font-geist-semibold text-xs tracking-[1.4px]">
           {depDate ? formatPass(depDate) : 'Date not provided'}
           {depDate ? <Text className="font-geist-medium tracking-normal text-muted">{'  '}{formatWeekday(depDate)}</Text> : null}
@@ -109,12 +109,13 @@ export function FlightCard({ ticket, handlers }: { ticket: Ticket; handlers: Tic
 
       <Perforation className="mt-4" />
 
-      <View className="flex-row flex-wrap gap-y-4 px-5 pb-2 pt-1">
-        <Detail label="PNR" value={ticket.booking_reference} mono copy={ticket.booking_reference} className="w-2/3" />
-        <Detail label="Seat" value={seat} mono className="w-1/3" />
-        <Detail label="Class" value={cabin} className="w-1/3" />
-        <Detail label="Terminal" value={terminal} className="w-1/3" />
-        <Detail label="Flight" value={journey?.outbound.length === 1 ? flightNumbers : null} mono className="w-1/3" />
+      <View className="flex-row px-5 pt-1">
+        <Detail label="PNR" value={ticket.booking_reference} mono copy={ticket.booking_reference} className="flex-[1.75]" />
+        <Detail label="Seat" value={seat} mono className="flex-1" />
+        <Detail label="Terminal" value={terminal} mono className="flex-1" />
+        <Detail label="Flight" value={journey?.outbound.length === 1 ? flightNumbers : null} mono className="flex-[1.25]" />
+      </View>
+      <View className="mt-4 gap-4 px-5 pb-2">
         <PassengerRow names={data?.passengers} />
         <BaggageRow value={data?.baggage} />
       </View>

@@ -9,7 +9,7 @@ import type { Ticket } from '@/types';
 
 const LABEL: Record<string, string> = { qr: 'QR code', pdf417: 'Barcode', aztec: 'Barcode', datamatrix: 'Barcode', code128: 'Barcode', barcode: 'Barcode' };
 const RATIOS = new Map<string, number>();
-const SQUARE_MAX = 168; // a QR code is shown at a scannable, card-friendly size rather than stretched
+const SQUARE_MAX = 148; // a QR code is shown at a scannable, card-friendly size rather than stretched
 
 /**
  * The QR code / barcode from the original document, exactly as cropped (no extra frame or margin), sitting
@@ -40,7 +40,7 @@ export function TicketCode({ ticket }: { ticket: Ticket }) {
   const measuring = ratio === null;
 
   return (
-    <View className="mt-4 px-5">
+    <View className="mt-3 px-5">
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="imagebutton"
