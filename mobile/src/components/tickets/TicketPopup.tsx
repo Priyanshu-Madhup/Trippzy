@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from 'react';
 import { BackHandler, Pressable, View, useWindowDimensions } from 'react-native';
-import Animated, { Easing, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, cancelAnimation, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 import { hashHue } from '@/lib/utils';
@@ -51,19 +51,30 @@ function PerimeterLight({ width, height, color, progress }: { width: number; hei
     return { cumT: t, cumD: d };
   }, [w, h, r]);
 
+  // The geometry lives in shared values so a size change updates the running animation in place, instead of restarting it.
+  const tArr = useSharedValue<number[]>([0, 1]);
+  const dArr = useSharedValue<number[]>([0, 0]);
   useEffect(() => {
-    if (!perimeter) return;
+    tArr.value = cumT;
+    dArr.value = cumD;
+  }, [cumT, cumD, tArr, dArr]);
+
+  // One clock for the life of the popup: it starts once and is never reset by a layout change.
+  useEffect(() => {
     clock.value = 0;
     clock.value = withRepeat(withTiming(1, { duration: LOOP_MS, easing: Easing.linear }), -1, false);
-  }, [perimeter, clock]);
+    return () => cancelAnimation(clock);
+  }, [clock]);
 
   const props = useAnimatedProps(() => {
     const t = clock.value;
+    const ts = tArr.value;
+    const ds = dArr.value;
     let i = 0;
-    while (i < cumT.length - 2 && t >= cumT[i + 1]) i++;
-    const span = cumT[i + 1] - cumT[i];
-    const f = span > 0 ? (t - cumT[i]) / span : 0;
-    return { strokeDashoffset: -(cumD[i] + f * (cumD[i + 1] - cumD[i])) };
+    while (i < ts.length - 2 && t >= ts[i + 1]) i++;
+    const span = ts[i + 1] - ts[i];
+    const f = span > 0 ? (t - ts[i]) / span : 0;
+    return { strokeDashoffset: -(ds[i] + f * (ds[i + 1] - ds[i])) };
   });
   const fade = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0.6, 1], [0, 1], 'clamp') }));
   if (!perimeter) return null;
@@ -157,7 +168,11 @@ export function TicketPopup({
         <Animated.View style={card}>
           <View style={{ height: box.h ? box.h * scale : undefined }}>
             <View
-              onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+              onLayout={(e) => {
+                const w = Math.round(e.nativeEvent.layout.width);
+                const h = Math.round(e.nativeEvent.layout.height);
+                setBox((b) => (Math.abs(b.w - w) < 2 && Math.abs(b.h - h) < 2 ? b : { w, h }));
+              }}
               style={[{ position: 'absolute', top: 0, left: 0, right: 0, opacity: box.h ? 1 : 0, transformOrigin: 'top center' }, { transform: [{ scale }] }]}
             >
               <TicketCard ticket={t} handlers={{ ...handlers, onCollapse: () => onClose() }} />

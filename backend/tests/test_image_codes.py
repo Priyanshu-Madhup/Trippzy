@@ -61,8 +61,8 @@ def test_an_unreadable_qr_is_still_cropped_for_the_card():
     codes = documents.find_codes(data, "image/png")
     assert len(codes) == 1 and codes[0].text == "" and codes[0].format == "qr"
     crop = Image.open(io.BytesIO(codes[0].png))
-    assert 220 <= crop.width <= 300 and 220 <= crop.height <= 300  # the code, not the whole page
-    cx, cy = codes[0].center
+    assert 600 <= crop.width <= 900 and 600 <= crop.height <= 900  # just the code (about 260px), enlarged 3x
+    cx, cy = codes[0].center  # page coordinates, unaffected by the enlargement
     assert abs(cx - (x + 150)) < 20 and abs(cy - (y + 150)) < 20
 
 
@@ -71,3 +71,24 @@ def test_a_page_with_no_code_yields_nothing():
     buf = io.BytesIO()
     page.save(buf, "PNG")
     assert documents.find_codes(buf.getvalue(), "image/png") == []
+
+
+def test_only_printed_code_lookalikes_survive_the_unreadable_filter():
+    import numpy as np
+
+    bc = zxingcpp.create_barcode("GOFLDNTAOGTG5009167|IX2464|BLR-IXR|10NOV2026|MR PRIYANSHU MADHUP|E1S7VL", zxingcpp.BarcodeFormat.PDF417)
+    a = np.asarray(bc.to_image(scale=2))
+    code = Image.fromarray(a if a.ndim == 2 else a[..., 0]).convert("RGB")
+    assert documents._printed_code_like(code)
+    assert not documents._printed_code_like(Image.new("RGB", (200, 60), "white"))  # blank
+    assert not documents._printed_code_like(Image.new("RGB", (200, 60), (200, 40, 40)))  # a coloured banner
+    noise = np.random.default_rng(0).integers(0, 255, (60, 200, 3), dtype=np.uint8)
+    assert not documents._printed_code_like(Image.fromarray(noise))  # a coloured photo
+
+
+def test_small_codes_are_enlarged_in_whole_steps():
+    small = Image.new("RGB", (186, 45), "white")
+    buf = io.BytesIO()
+    small.save(buf, "PNG")
+    out = Image.open(io.BytesIO(documents._sharpen_png(buf.getvalue())))
+    assert out.width % 186 == 0 and 600 <= out.width <= 1200

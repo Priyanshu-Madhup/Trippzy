@@ -219,8 +219,44 @@ def _qr_like(img: Image.Image) -> list[FoundCode]:
             box = (int(max(min(xs) - pad, 0)), int(max(min(ys) - pad, 0)), int(min(max(xs) + pad, img.width)), int(min(max(ys) + pad, img.height)))
             if min(box[2] - box[0], box[3] - box[1]) >= MIN_CODE_PX // 2:
                 crop = img.crop(box)
-                return [FoundCode("qr", "", _png(crop), 1, crop.width * crop.height, ((box[0] + box[2]) / 2 / scale, (box[1] + box[3]) / 2 / scale))]
+                return [
+                    FoundCode("qr", "", _sharpen_png(_png(crop)), 1, crop.width * crop.height, ((box[0] + box[2]) / 2 / scale, (box[1] + box[3]) / 2 / scale))
+                ]
     return []
+
+
+def _sharpen_png(png: bytes, target: int = 700) -> bytes:
+    """Whole-number nearest-neighbour enlargement: a small code the decoder couldn't read stays crisp instead of blurry."""
+    img = Image.open(io.BytesIO(png)).convert("RGB")
+    k = max(1, min(6, -(-target // max(img.width, 1))))
+    return _png(img.resize((img.width * k, img.height * k), Image.NEAREST)) if k > 1 else png
+
+
+def _printed_code_like(img: Image.Image) -> bool:
+    """A cropped candidate must look like a printed code: nearly colourless, a real share of ink, and many light/dark
+    transitions. Stops a text-heavy screenshot or a photo from yielding a bogus code."""
+    rgb = np.asarray(img.convert("RGB").resize((min(img.width, 400), max(1, int(img.height * min(img.width, 400) / img.width)))), dtype=np.int16)
+    if (rgb.max(2) - rgb.min(2)).mean() > 22:
+        return False
+    g = rgb.mean(2)
+    dark = g < 128
+    if not 0.12 <= dark.mean() <= 0.68:
+        return False
+    return max((dark[:, 1:] != dark[:, :-1]).sum(1).mean(), (dark[1:, :] != dark[:-1, :]).sum(0).mean()) >= 12
+
+
+def _scan_unreadable(img: Image.Image, zoom: float = 1.0) -> list[FoundCode]:
+    """A code the decoder located but couldn't read (tiny, soft, or a sample): crop the best one so the card can still show it."""
+    best: FoundCode | None = None
+    for bc in zxingcpp.read_barcodes(img, formats=CODE_FORMATS, try_rotate=True, return_errors=True):
+        if bc.valid and bc.text:
+            continue
+        cropped = _crop_code(img, bc)
+        if not cropped or not _printed_code_like(Image.open(io.BytesIO(cropped[0]))):
+            continue
+        if best is None or cropped[1] > best.area:
+            best = FoundCode(_FORMAT_NAMES.get(bc.format, "barcode"), "", _sharpen_png(cropped[0]), 1, cropped[1], (cropped[2][0] / zoom, cropped[2][1] / zoom))
+    return [best] if best else []
 
 
 def _scan_image(img: Image.Image) -> list[FoundCode]:
@@ -240,6 +276,9 @@ def _scan_image(img: Image.Image) -> list[FoundCode]:
     for v in variants:
         zoom = v.width / w
         if found := _scan(v, 1, zoom):
+            return found
+    for v in variants:
+        if found := _scan_unreadable(v, v.width / w):
             return found
     return _qr_like(img)
 
