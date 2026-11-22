@@ -148,6 +148,81 @@ def _scan(img: Image.Image, page: int, zoom: float = 1.0) -> list[FoundCode]:
     return out
 
 
+def _runs(line: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Run-length encode a boolean row: (start index, length, value) of each run."""
+    edges = np.flatnonzero(line[1:] != line[:-1]) + 1
+    starts = np.concatenate(([0], edges))
+    lengths = np.diff(np.concatenate((starts, [line.size])))
+    return starts, lengths, line[starts]
+
+
+def _finder_hits(dark: np.ndarray, step: int = 2) -> list[tuple[float, float, float]]:
+    """Centres (x, y, module size) where a row crosses a QR finder square: dark-light-dark-light-dark in 1:1:3:1:1."""
+    hits = []
+    for y in range(0, dark.shape[0], step):
+        starts, lengths, vals = _runs(dark[y])
+        for i in range(len(lengths) - 4):
+            if not vals[i]:
+                continue
+            a, b, c, d, e = (int(v) for v in lengths[i : i + 5])
+            m = (a + b + c + d + e) / 7
+            if m < 2 or max(abs(a - m), abs(b - m), abs(d - m), abs(e - m)) > 0.6 * m or abs(c - 3 * m) > 1.2 * m:
+                continue
+            hits.append((starts[i] + (a + b + c + d + e) / 2, float(y), m))
+    return hits
+
+
+def _qr_like(img: Image.Image) -> list[FoundCode]:
+    """A QR code the decoder can't read (a mock-up, a sample ticket, a damaged print) still has its three finder
+    squares. Find them and crop the code so the card can show it, with no payload."""
+    scale = 1.0
+    if max(img.size) > 1800:
+        scale = 1800 / max(img.size)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+    g = np.asarray(img.convert("L"), dtype=np.uint8)
+    for dark in (g < int(g.mean()), g > int(g.mean())):  # dark-on-light, then the inverted look
+        rows = _finder_hits(dark)
+        cols = [(y, x, m) for (x, y, m) in _finder_hits(np.ascontiguousarray(dark.T))]
+        # a finder square shows up in both directions, at about the same place
+        both = [(x, y, m) for (x, y, m) in rows if any(abs(cx - x) < 2 * m and abs(cy - y) < 2 * m and 0.6 < cm / m < 1.6 for cx, cy, cm in cols)]
+        centres: list[list[float]] = []
+        for x, y, m in both:
+            for c in centres:
+                if abs(c[0] / c[3] - x) < 2.5 * m and abs(c[1] / c[3] - y) < 2.5 * m:
+                    c[0] += x
+                    c[1] += y
+                    c[2] += m
+                    c[3] += 1
+                    break
+            else:
+                centres.append([x, y, m, 1])
+        pts = [(c[0] / c[3], c[1] / c[3], c[2] / c[3]) for c in centres]
+        best = None
+        for i, (x1, y1, m1) in enumerate(pts):  # corner point + two equal perpendicular legs
+            for j, (x2, y2, _) in enumerate(pts):
+                for k, (x3, y3, _) in enumerate(pts):
+                    if j >= k or i in (j, k):
+                        continue
+                    v1, v2 = (x2 - x1, y2 - y1), (x3 - x1, y3 - y1)
+                    l1, l2 = float(np.hypot(*v1)), float(np.hypot(*v2))
+                    if not (12 * m1 <= l1 <= 90 * m1 and 0.85 <= l1 / max(l2, 1e-6) <= 1.18):
+                        continue
+                    if abs(v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2) > 0.2:  # not ~90°
+                        continue
+                    if best is None or l1 > best[0]:
+                        best = (l1, [(x1, y1), (x2, y2), (x3, y3)], m1)
+        if best:
+            _, tri, m = best
+            xs = [p[0] for p in tri] + [tri[1][0] + tri[2][0] - tri[0][0]]
+            ys = [p[1] for p in tri] + [tri[1][1] + tri[2][1] - tri[0][1]]
+            pad = 3.5 * m + max(int(m * 2), 4)  # finder centre to code edge, plus a little quiet zone
+            box = (int(max(min(xs) - pad, 0)), int(max(min(ys) - pad, 0)), int(min(max(xs) + pad, img.width)), int(min(max(ys) + pad, img.height)))
+            if min(box[2] - box[0], box[3] - box[1]) >= MIN_CODE_PX // 2:
+                crop = img.crop(box)
+                return [FoundCode("qr", "", _png(crop), 1, crop.width * crop.height, ((box[0] + box[2]) / 2 / scale, (box[1] + box[3]) / 2 / scale))]
+    return []
+
+
 def _scan_image(img: Image.Image) -> list[FoundCode]:
     """A photo or screenshot of a ticket: try the picture as it is, then the variants a decoder needs when the code is
     small, soft, huge or low-contrast. The first pass that finds a code wins."""
@@ -166,7 +241,7 @@ def _scan_image(img: Image.Image) -> list[FoundCode]:
         zoom = v.width / w
         if found := _scan(v, 1, zoom):
             return found
-    return []
+    return _qr_like(img)
 
 
 def _looks_like_barcode(img: Image.Image) -> bool:
